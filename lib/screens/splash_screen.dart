@@ -13,8 +13,8 @@ class _SplashScreenState extends State<SplashScreen> {
   void initState() {
     super.initState();
     Timer(const Duration(seconds: 3), () {
-      // Navigate to Home Screen after 3 seconds
-      Navigator.pushReplacementNamed(context, '/home');
+      // Navigate to login Screen after 3 seconds
+      Navigator.pushReplacementNamed(context, '/login');
     });
   }
 
@@ -22,15 +22,9 @@ class _SplashScreenState extends State<SplashScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              const Color.fromRGBO(122, 29, 255, 0.4), // Adjusted purple shade
-              const Color.fromRGBO(42, 210, 201, 0.8), // Adjusted blue shade
-            ],
-          ),
+        decoration: const BoxDecoration(
+          color: Color.fromRGBO(
+              255, 255, 255, 1), // Set background color to pure white
         ),
         child: Stack(
           children: [
