@@ -40,6 +40,7 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  flutter_svg: ^2.0.7 # Add this line
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
@@ -60,6 +61,17 @@ flutter:
     - assets/images/bottom_design.png
     - assets/images/rewaqx_screenlogo.svg
     - assets/images/chevron-left.svg
+    - assets/images/bottom_nav/Home.svg
+    - assets/images/bottom_nav/Message.svg
+    - assets/images/bottom_nav/Profile.svg
+    - assets/images/bottom_nav/gift-card 1.svg
+    - assets/images/bottom_nav/calendar (7) 1.svg
+    - assets/images/avatar.png
+    - assets/images/edite_pic.svg
+    - assets/images/logout.svg
+    - assets/images/My Details icon.svg
+    - assets/images/mypost.svg
+    - assets/images/back arrow.svg
 
   fonts:
     - family: Quicksand
