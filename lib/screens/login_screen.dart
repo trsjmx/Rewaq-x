@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'otp_screen.dart'; // Import OTP Screen
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -127,7 +128,12 @@ class _LoginScreenState extends State<LoginScreen> {
                   height: 48,
                   child: ElevatedButton(
                     onPressed: () {
-                      // Handle login functionality here
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const OTPScreen(),
+                        ),
+                      );
                     },
                     style: ElevatedButton.styleFrom(
                       elevation: 0,
