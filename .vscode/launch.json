@@ -1,0 +1,10 @@
+{
+    "configurations": [
+        {
+            "name": "Flutter (lib/screens/voucher_screen.dart)",
+            "type": "dart",
+            "request": "launch",
+            "program": "lib/screens/voucher_screen.dart"
+        }
+    ]
+}

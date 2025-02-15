@@ -135,7 +135,7 @@ class VoucherScreen extends StatelessWidget {
                     title: 'Half Million Coffee',
                     points: '100 Points',
                     value: '50 SAR',
-                    iconPath: 'assets/images/1:2M.png', 
+                    iconPath: 'assets/images/Mel.png', 
                     svgPath: 'assets/images/voucher.svg', 
                   ),
                   VoucherCard(
