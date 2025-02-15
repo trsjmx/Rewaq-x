@@ -75,7 +75,16 @@ flutter:
     - assets/images/back arrow.svg
     - assets/images/add_reaction.svg
     - assets/images/comments.svg
-
+    - assets/images/traingleEffect.svg
+    - assets/images/voucher.svg
+    - assets/images/1:2M.png
+    - assets/images/Beauty.png
+    - assets/images/ga.png
+    - assets/images/car.png
+    - assets/images/bottom_nav/coloredGift.svg
+    - assets/images/bottom_nav/uncoloredProfile.svg
+    - assets/images/cut.svg
+  
   fonts:
     - family: Quicksand
       fonts:
