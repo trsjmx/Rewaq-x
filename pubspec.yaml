@@ -76,7 +76,6 @@ flutter:
     - assets/images/back arrow.svg
     - assets/images/add_reaction.svg
     - assets/images/comments.svg
-    - assets/images/office.png
 
   fonts:
     - family: Quicksand
