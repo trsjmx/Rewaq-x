@@ -25,10 +25,10 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   
 // Method to handle image selection
 Future<void> _pickImage() async {
-  final ImagePicker _picker = ImagePicker();
+  final ImagePicker picker = ImagePicker();
   
   // Pick an image from the gallery
-  final XFile? pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+  final XFile? pickedFile = await picker.pickImage(source: ImageSource.gallery);
 
   if (pickedFile != null) {
     setState(() {

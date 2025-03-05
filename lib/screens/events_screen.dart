@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
 
+
 // Event model with title and designated color.
 class Event {
   final String title;
@@ -101,25 +102,51 @@ class _EventsScreenState extends State<EventsScreen> {
     final monthEvents = _getMonthEvents();
 
     return Scaffold(
-      backgroundColor: const Color.fromRGBO(250, 250, 252, 1),
+      backgroundColor: Color(0xFFFAFAFC),
+          appBar: PreferredSize(
+            preferredSize: Size.fromHeight(80.0), // Set the height to your desired value
+            child: AppBar(
+              automaticallyImplyLeading: false, // Disable the back arrow
+              backgroundColor: Colors.white,           // White background
+              elevation: 0,                             // Remove default shadow
+              title: const Text(
+                'UPM Community',
+                style: TextStyle(
+                  fontFamily: 'Quicksand',
+                  fontWeight: FontWeight.bold,          // Bold text
+                  fontSize: 18,                         // Font size 18
+                  color: Color(0xFF7A1DFF),             // Color #7A1DFF
+                ),
+              ),
+              centerTitle: true,                        // Center the title
+              shadowColor: const Color(0x1A1B1D36),     // Shadow color with 10% opacity
+              shape: const RoundedRectangleBorder(
+                side: BorderSide(color: Colors.transparent),
+                borderRadius: BorderRadius.vertical(
+                  bottom: Radius.circular(0),
+                ),
+              ),
+              flexibleSpace: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Color(0x1A1B1D36),          // Shadow color with 10% opacity
+                      offset: Offset(0, 4),              // Position: y = 4
+                      blurRadius: 20,                    // Blur radius: 20
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 60),
-            const Center(
-              child: Text(
-                'UPM Calendar',
-                style: TextStyle(
-                  fontFamily: 'Quicksand',
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Color.fromRGBO(122, 29, 255, 1),
-                ),
-              ),
-            ),
-            const SizedBox(height: 10),
+            
 
             /// Calendar
             Container(

@@ -3,22 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:rewaqx/screens/create_post.dart';
 
 
-void main() {
-  runApp(MyApp());
-}
 
-class MyApp extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Community Screen',
-      theme: ThemeData(
-        primaryColor: Color.fromRGBO(122, 29, 255, 0.08),
-      ),
-      home: CommunityScreen(),
-    );
-  }
-}
 class CommunityScreen extends StatefulWidget {
   const CommunityScreen({super.key});
 
@@ -46,6 +31,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
           appBar: PreferredSize(
             preferredSize: Size.fromHeight(80.0), // Set the height to your desired value
             child: AppBar(
+              automaticallyImplyLeading: false, // Disable the back arrow
               backgroundColor: Colors.white,           // White background
               elevation: 0,                             // Remove default shadow
               title: const Text(
@@ -379,7 +365,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                       ],
                     ),
                   );
-                }).toList(),
+                }),
               ],
             ),
             const SizedBox(height: 6.0),

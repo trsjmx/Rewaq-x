@@ -1,61 +1,56 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-void main() {
-  runApp(MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Voucher Screen',
-      theme: ThemeData(
-        primaryColor: Color.fromRGBO(167, 162, 174, 0.078),
-      ),
-      home: VoucherScreen(),
-    );
-  }
-}
 
 class VoucherScreen extends StatelessWidget {
+  const VoucherScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-     
+     backgroundColor: Color(0xFFFAFAFC),
+          appBar: PreferredSize(
+            preferredSize: Size.fromHeight(80.0), // Set the height to your desired value
+            child: AppBar(
+              automaticallyImplyLeading: false, // Disable the back arrow
+              backgroundColor: Colors.white,           // White background
+              elevation: 0,                             // Remove default shadow
+              title: const Text(
+                'Rewards Store',
+                style: TextStyle(
+                  fontFamily: 'Quicksand',
+                  fontWeight: FontWeight.bold,          // Bold text
+                  fontSize: 18,                         // Font size 18
+                  color: Color(0xFF7A1DFF),             // Color #7A1DFF
+                ),
+              ),
+              centerTitle: true,                        // Center the title
+              shadowColor: const Color(0x1A1B1D36),     // Shadow color with 10% opacity
+              shape: const RoundedRectangleBorder(
+                side: BorderSide(color: Colors.transparent),
+                borderRadius: BorderRadius.vertical(
+                  bottom: Radius.circular(0),
+                ),
+              ),
+              flexibleSpace: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Color(0x1A1B1D36),          // Shadow color with 10% opacity
+                      offset: Offset(0, 4),              // Position: y = 4
+                      blurRadius: 20,                    // Blur radius: 20
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
       body: SingleChildScrollView(
         child: Column(
           children: [
             // White rectangle and shadow
-            Container(
-              width: double.infinity, 
-              height: 140, 
-              decoration: BoxDecoration(
-                color: Colors.white, 
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1), // Shadow color
-                    blurRadius: 10, // Shadow blur
-                    spreadRadius: 2, // Shadow spread
-                    offset: Offset(0, 4), // Shadow position (x, y)
-                  ),
-                ],
-              ),
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 70), // Move text down by 70 
-                  child: Text(
-                    'Rewards Store',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Color.fromRGBO(122, 29, 255, 1), // Text color
-                      fontFamily: "Quicksand",
-                    ),
-                  ),
-                ),
-              ),
-            ),
+           
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
@@ -65,7 +60,7 @@ class VoucherScreen extends StatelessWidget {
                   // Rectangle with triangle SVG and text
                   Container(
                     width: 370,
-                    height: 110,
+                    height: 120,
                     decoration: BoxDecoration(
                       color: Color.fromRGBO(122, 29, 255, 1), 
                       borderRadius: BorderRadius.circular(20), 
@@ -95,11 +90,12 @@ class VoucherScreen extends StatelessWidget {
                                   fontFamily: "Quicksand",
                                   fontWeight: FontWeight.w700,
                                   color: Colors.white, 
+                                
                                 ),
                               ),
                               SizedBox(height: 8),
                               Text(
-                                'Your hard work deserves a treat!🎉 \nRedeem your points for exclusive vouchers and enjoy amazing deals on your favorite brands, services, and more.',
+                                'Your hard work deserves a treat! 🎉 \nRedeem your points for exclusive vouchers and enjoy amazing deals on your favorite brands, services, and more.',
                                 style: TextStyle(
                                   fontSize: 10,
                                   fontFamily: "Quicksand",
@@ -159,6 +155,8 @@ class VoucherScreen extends StatelessWidget {
           ],
         ),
       ),
+
+      /*
       // Bottom Bar with Shadow
       bottomNavigationBar: Container(
         padding: EdgeInsets.only(top: 22, bottom: 55),
@@ -184,10 +182,15 @@ class VoucherScreen extends StatelessWidget {
           ],
         ),
       ),
+      */
     );
   }
 
+
+
+
   // Helper method to build bottom bar icons with text
+  /*
   Widget _buildBottomBarIcon(String iconP, String text, Color textColor) {
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -209,7 +212,7 @@ class VoucherScreen extends StatelessWidget {
         ),
       ],
     );
-  }
+  }*/
 }
 
 class VoucherCard extends StatelessWidget {
@@ -219,7 +222,7 @@ class VoucherCard extends StatelessWidget {
   final String iconPath; // Icon for the voucher card
   final String svgPath; // SVG for the voucher card
 
-  VoucherCard({
+  const VoucherCard({super.key, 
     required this.title,
     required this.points,
     required this.value,
@@ -238,7 +241,7 @@ class VoucherCard extends StatelessWidget {
         children: [
           // White rectangle (coupon part)
           Container(
-            width: 313, 
+            width: 300, 
             height: 103, 
             decoration: BoxDecoration(
               color: Colors.white, // White background

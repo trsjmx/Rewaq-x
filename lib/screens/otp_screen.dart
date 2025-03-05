@@ -163,6 +163,8 @@ class _OTPScreenState extends State<OTPScreen> {
                   child: ElevatedButton(
                     onPressed: () {
                       // Handle OTP Verification
+                      // After verifying the OTP, navigate to the HomeScreen
+                      Navigator.pushReplacementNamed(context, '/home');
                     },
                     style: ElevatedButton.styleFrom(
                       elevation: 0,

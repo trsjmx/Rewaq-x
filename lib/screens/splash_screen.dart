@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 
+
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -38,10 +39,10 @@ class _SplashScreenState extends State<SplashScreen> {
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: const Color.fromRGBO(122, 29, 255, 0.4),
+                      color: Color.fromRGBO(122, 29, 255, 0.4),
                       blurRadius: 225.88,
                       spreadRadius: 0,
-                      offset: const Offset(20, 20),
+                      offset: Offset(20, 20),
                     ),
                   ],
                 ),
