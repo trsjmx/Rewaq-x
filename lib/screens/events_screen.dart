@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
 
-
 // Event model with title and designated color.
 class Event {
   final String title;
@@ -43,7 +42,7 @@ class _EventsScreenState extends State<EventsScreen> {
     DateTime(2025, 1, 25): [
       Event(
         title: 'Company Anniversary',
-        color: const Color.fromRGBO(244, 183, 64, 1),
+        color: const Color.fromRGBO(244, 183, 64, 1), //yellow color
       ),
     ],
     DateTime(2025, 1, 31): [
@@ -103,50 +102,50 @@ class _EventsScreenState extends State<EventsScreen> {
 
     return Scaffold(
       backgroundColor: Color(0xFFFAFAFC),
-          appBar: PreferredSize(
-            preferredSize: Size.fromHeight(80.0), // Set the height to your desired value
-            child: AppBar(
-              automaticallyImplyLeading: false, // Disable the back arrow
-              backgroundColor: Colors.white,           // White background
-              elevation: 0,                             // Remove default shadow
-              title: const Text(
-                'UPM Community',
-                style: TextStyle(
-                  fontFamily: 'Quicksand',
-                  fontWeight: FontWeight.bold,          // Bold text
-                  fontSize: 18,                         // Font size 18
-                  color: Color(0xFF7A1DFF),             // Color #7A1DFF
-                ),
-              ),
-              centerTitle: true,                        // Center the title
-              shadowColor: const Color(0x1A1B1D36),     // Shadow color with 10% opacity
-              shape: const RoundedRectangleBorder(
-                side: BorderSide(color: Colors.transparent),
-                borderRadius: BorderRadius.vertical(
-                  bottom: Radius.circular(0),
-                ),
-              ),
-              flexibleSpace: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Color(0x1A1B1D36),          // Shadow color with 10% opacity
-                      offset: Offset(0, 4),              // Position: y = 4
-                      blurRadius: 20,                    // Blur radius: 20
-                    ),
-                  ],
-                ),
-              ),
+      appBar: PreferredSize(
+        preferredSize:
+            Size.fromHeight(80.0), // Set the height to your desired value
+        child: AppBar(
+          automaticallyImplyLeading: false, // Disable the back arrow
+          backgroundColor: Colors.white, // White background
+          elevation: 0, // Remove default shadow
+          title: const Text(
+            'UPM Community',
+            style: TextStyle(
+              fontFamily: 'Quicksand',
+              fontWeight: FontWeight.bold, // Bold text
+              fontSize: 18, // Font size 18
+              color: Color(0xFF7A1DFF), // Color #7A1DFF
             ),
           ),
+          centerTitle: true, // Center the title
+          shadowColor: const Color(0x1A1B1D36), // Shadow color with 10% opacity
+          shape: const RoundedRectangleBorder(
+            side: BorderSide(color: Colors.transparent),
+            borderRadius: BorderRadius.vertical(
+              bottom: Radius.circular(0),
+            ),
+          ),
+          flexibleSpace: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Color(0x1A1B1D36), // Shadow color with 10% opacity
+                  offset: Offset(0, 4), // Position: y = 4
+                  blurRadius: 20, // Blur radius: 20
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 60),
-            
 
             /// Calendar
             Container(
