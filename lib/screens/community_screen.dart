@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:rewaqx/screens/create_post.dart';
-
-
+import 'package:rewaqx/services/backend_service.dart'; // Import the BackendService
 
 class CommunityScreen extends StatefulWidget {
   const CommunityScreen({super.key});
@@ -12,93 +11,112 @@ class CommunityScreen extends StatefulWidget {
 }
 
 class _CommunityScreenState extends State<CommunityScreen> {
-  // Initialize reactions for posts
-  Map<String, int> post1Reactions = {'❤️': 7, '👍': 2, '🫡': 4, '🏆': 1, '🚀': 1};
-  Map<String, int> post2Reactions = {'❤️': 10, '😍': 5, '🫡': 5, '🔥': 3};
-  Map<String, int> post3Reactions = {'❤️': 7, '👍': 2, '🫡': 4, '🏆': 1, '🚀': 1};
+  List<dynamic> posts = []; // List to store posts fetched from the backend
+  bool isLoading = true; // Loading state
 
-  // Method to update reactions dynamically
-  void _updateReactions(Map<String, int> reactions, String emoji) {
-    setState(() {
-      reactions[emoji] = reactions.containsKey(emoji) ? reactions[emoji]! + 1 : 1;
-    });
+  @override
+  void initState() {
+    super.initState();
+    _fetchPosts(); // Fetch posts when the screen loads
+  }
+
+  // Fetch posts from the backend
+  Future<void> _fetchPosts() async {
+    try {
+      final fetchedPosts = await BackendService.fetchPosts();
+      print('Fetched posts: $fetchedPosts'); // Debug log
+
+      setState(() {
+        posts = fetchedPosts;
+        isLoading = false;
+      });
+    } catch (e) {
+      print('Error fetching posts: $e'); // Debug log
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+  // Update reactions for a post
+  void _updateReactions(String postId, Map<String, int> reactions, String emoji,
+      int points) async {
+    try {
+      await BackendService.addReaction(
+          postId, emoji, points); // Corrected method call
+      setState(() {
+        reactions[emoji] =
+            (reactions[emoji] ?? 0) + 1; // Update reactions locally
+      });
+    } catch (e) {
+      print('Error updating reactions: $e'); // Debug log
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (isLoading) {
+      return Center(child: CircularProgressIndicator());
+    }
+
+    if (posts.isEmpty) {
+      return Center(child: Text('No posts available.'));
+    }
+
     return Scaffold(
       backgroundColor: Color(0xFFFAFAFC),
-          appBar: PreferredSize(
-            preferredSize: Size.fromHeight(80.0), // Set the height to your desired value
-            child: AppBar(
-              automaticallyImplyLeading: false, // Disable the back arrow
-              backgroundColor: Colors.white,           // White background
-              elevation: 0,                             // Remove default shadow
-              title: const Text(
-                'UPM Community',
-                style: TextStyle(
-                  fontFamily: 'Quicksand',
-                  fontWeight: FontWeight.bold,          // Bold text
-                  fontSize: 18,                         // Font size 18
-                  color: Color(0xFF7A1DFF),             // Color #7A1DFF
-                ),
-              ),
-              centerTitle: true,                        // Center the title
-              shadowColor: const Color(0x1A1B1D36),     // Shadow color with 10% opacity
-              shape: const RoundedRectangleBorder(
-                side: BorderSide(color: Colors.transparent),
-                borderRadius: BorderRadius.vertical(
-                  bottom: Radius.circular(0),
-                ),
-              ),
-              flexibleSpace: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Color(0x1A1B1D36),          // Shadow color with 10% opacity
-                      offset: Offset(0, 4),              // Position: y = 4
-                      blurRadius: 20,                    // Blur radius: 20
-                    ),
-                  ],
-                ),
-              ),
+      appBar: PreferredSize(
+        preferredSize: Size.fromHeight(80.0),
+        child: AppBar(
+          automaticallyImplyLeading: false,
+          backgroundColor: Colors.white,
+          elevation: 0,
+          title: const Text(
+            'UPM Community',
+            style: TextStyle(
+              fontFamily: 'Quicksand',
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+              color: Color(0xFF7A1DFF),
             ),
           ),
+          centerTitle: true,
+          shadowColor: const Color(0x1A1B1D36),
+          shape: const RoundedRectangleBorder(
+            side: BorderSide(color: Colors.transparent),
+            borderRadius: BorderRadius.vertical(
+              bottom: Radius.circular(0),
+            ),
+          ),
+          flexibleSpace: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Color(0x1A1B1D36),
+                  offset: Offset(0, 4),
+                  blurRadius: 20,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
-          children: [
-            _buildPost(
-              name: 'Tosneem Alhattami',
-              role: 'SW Eng - IT department',
-              time: '2h',
-              content:
-                  'Just secured the MegaTech partnership! 🌟 This is a huge step forward for our team’s vision and growth goals. Proud of what we’ve accomplished together!',
-              reactions: post1Reactions,
-              comments: 6,
-            ),
-            const SizedBox(height: 16.0),
-            _buildPost(
-              name: 'Lojain Ajash',
-              role: 'Project Manager - IT department',
-              time: '3h',
-              content:
-                  'We’re working on a new project — a smart task management system to make work life easier for everyone. Excited to see how this turns out! 🌟 Got ideas? Drop them my way! 😊',
-              reactions: post2Reactions,
-              comments: 10,
-              imageUrl: 'assets/images/office.png',
-            ),
-            const SizedBox(height: 16.0),
-            _buildPost(
-              name: 'Rana Ehab',
-              role: 'Marketing Specialist ',
-              time: '5h',
-              content: 'kjjjk',
-              reactions: post3Reactions,
-              comments: 8,
-            ),
-          ],
+          children: posts
+              .map((post) => _buildPost(
+                    id: post['id'],
+                    name: post['user']['name'],
+                    role: post['user']['role'],
+                    time: post['time'],
+                    content: post['content'],
+                    reactions: Map<String, int>.from(post['reactions']),
+                    comments: post['comments'],
+                    imageUrl: post['image_path'],
+                  ))
+              .toList(),
         ),
       ),
       floatingActionButton: FloatingActionButton(
@@ -114,12 +132,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
 
           // Handle the new post data
           if (newPostData != null) {
-            final postContent = newPostData['content'];
-            final postImage = newPostData['image'];
-            print('New post: $postContent');
-            if (postImage != null) {
-              print('Post image: $postImage');
-            }
+            _fetchPosts(); // Refresh the posts after creating a new one
           }
         },
         backgroundColor: Color(0xFF2AD2C9),
@@ -130,9 +143,9 @@ class _CommunityScreenState extends State<CommunityScreen> {
       ),
     );
   }
-  
 
-  void _showReactionOverlay(BuildContext context, Map<String, int> reactions) {
+  void _showReactionOverlay(
+      BuildContext context, String postId, Map<String, int> reactions) {
     final List<Map<String, dynamic>> reactionOptions = [
       {'emoji': '❤️', 'points': 0},
       {'emoji': '👍', 'points': 10},
@@ -165,10 +178,8 @@ class _CommunityScreenState extends State<CommunityScreen> {
                   fontSize: 22.0,
                   fontWeight: FontWeight.bold,
                   fontFamily: 'Quicksand',
-                  color: Color(0xFF1B1D36)
-                  
+                  color: Color(0xFF1B1D36),
                 ),
-                
               ),
               SizedBox(height: 8.0),
               Text(
@@ -185,7 +196,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                 shrinkWrap: true,
                 physics: NeverScrollableScrollPhysics(),
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 4, // 3 emojis per row
+                  crossAxisCount: 4,
                   crossAxisSpacing: 16.0,
                   mainAxisSpacing: 16.0,
                 ),
@@ -194,9 +205,9 @@ class _CommunityScreenState extends State<CommunityScreen> {
                   final reaction = reactionOptions[index];
                   return GestureDetector(
                     onTap: () {
-                      // Update reactions on emoji selection
-                      _updateReactions(reactions, reaction['emoji']);
-                      Navigator.pop(context); // Close the overlay
+                      _updateReactions(postId, reactions, reaction['emoji'],
+                          reaction['points']);
+                      Navigator.pop(context);
                     },
                     child: Column(
                       children: [
@@ -226,8 +237,8 @@ class _CommunityScreenState extends State<CommunityScreen> {
     );
   }
 
-
   Widget _buildPost({
+    required String id,
     required String name,
     required String role,
     required String time,
@@ -236,160 +247,139 @@ class _CommunityScreenState extends State<CommunityScreen> {
     required int comments,
     String? imageUrl,
   }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white, // Card background color
-        borderRadius: BorderRadius.circular(10.0), // Rounded corners
-        border: Border.all(
-          color: Color(0xFFF4F4F4), // Border color
-          width: 1.0, // Border thickness
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Color(0x1A000000), // Shadow color
-            offset: Offset(0, 2), // Shadow offset
-            blurRadius: 10, // Shadow blur
-            spreadRadius: 0, // Shadow spread
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10.0), // Add vertical space
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8.0), // Rounded corners
+          border: Border.all(
+            color: Color(0xFFF4F4F4), // Border color
+            width: 1.0, // Border thickness
           ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start, // Align everything to the left
-          children: [
-            // User info
-            Row(
-              children: [
-                Container(
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: Color(0xFF7A1DFF), // The border color
-                      width: 1, // Adjust the width as needed
-                    ),
-                  ),
-                  child: const CircleAvatar(
-                    backgroundImage: AssetImage('assets/images/avatar.png'),
-                  ),
-                ),
-                const SizedBox(width: 8.0),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      name,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16.0,
-                        fontFamily: 'Quicksand',
-                      ),
-                    ),
-                    Text(
-                      '$role • $time',
-                      style: TextStyle(
-                        color: Colors.grey[600],
-                        fontSize: 14.0,
-                        fontFamily: 'Quicksand',
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: 8.0),
-
-            // Post content
-            Text(
-              content,
-              style: const TextStyle(
-                fontFamily: 'Quicksand',
-              ),
-            ),
-            const SizedBox(height: 8.0),
-
-            // Display image if provided
-            if (imageUrl != null)
-              ClipRRect(
-                borderRadius: BorderRadius.circular(10.0),
-                child: Image.asset(
-                  imageUrl,
-                  fit: BoxFit.cover,
-                  width: double.infinity,
-                  height: 200,
-                ),
-              ),
-            const SizedBox(height: 8.0),
-
-            // Divider line
-            const Divider(
-              color: Color(0xFFF4F4F4), // Line color
-              thickness: 1.0, // Line thickness
-            ),
-            const SizedBox(height: 2.0), // Reduced space between line and reactions
-
-            // Reactions and add reaction button
-            Row(
-              children: [
-                // Add reaction button (SVG icon)
-                IconButton(
-                  icon: SvgPicture.asset(
-                    'assets/images/add_reaction.svg', 
-                    height: 18.0, 
-                    width: 18.0,
-                  ),
-                  onPressed: () {
-                    _showReactionOverlay(context , reactions); 
-                  },
-                ),
-                const SizedBox(width: 7.0),
-
-                // Display reactions with more space
-                ...reactions.entries.map((entry) {
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 16.0), // Increased space between reactions
-                    child: Row(
-                      children: [
-                        Text(
-                          entry.key,
-                          style: const TextStyle(fontSize: 16.0),
-                        ),
-                        const SizedBox(width: 4.0),
-                        Text(
-                          entry.value.toString(),
-                          style: const TextStyle(
-                            fontSize: 14.0,
-                            fontFamily: 'Quicksand',
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }),
-              ],
-            ),
-            const SizedBox(height: 6.0),
-
-            // Comments with SVG icon
-            Row(
-              children: [
-                SvgPicture.asset(
-                  'assets/images/comments.svg', // Comment SVG icon
-                  height: 16.0, // Increased size
-                  width: 16.0,
-                ),
-                const SizedBox(width: 8.0),
-                Text(
-                  '$comments comments',
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 14.0,
-                    fontFamily: 'Quicksand',
-                  ),
-                ),
-              ],
+          boxShadow: [
+            BoxShadow(
+              color: Color(0x1A000000), // Shadow color
+              offset: Offset(0, 2), // Shadow offset
+              blurRadius: 10, // Shadow blur
+              spreadRadius: 0, // Shadow spread
             ),
           ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  CircleAvatar(
+                    backgroundImage: AssetImage('assets/images/avatar.png'),
+                  ),
+                  SizedBox(width: 8.0),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        name,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16.0,
+                          fontFamily: 'Quicksand',
+                        ),
+                      ),
+                      Text(
+                        '$role • $time',
+                        style: TextStyle(
+                          color: Colors.grey[600],
+                          fontSize: 14.0,
+                          fontFamily: 'Quicksand',
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              SizedBox(height: 8.0),
+              Text(
+                content,
+                style: TextStyle(
+                  fontFamily: 'Quicksand',
+                ),
+              ),
+              if (imageUrl != null && imageUrl.isNotEmpty)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(10.0),
+                  child: Image.network(
+                    'http://rewaqx.test/storage/$imageUrl',
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                    height: 200,
+                  ),
+                ),
+              SizedBox(height: 8.0),
+              Divider(
+                color: Color(0xFFF4F4F4),
+                thickness: 1.0,
+              ),
+              SizedBox(height: 2.0),
+              Row(
+                children: [
+                  IconButton(
+                    icon: SvgPicture.asset(
+                      'assets/images/add_reaction.svg',
+                      height: 18.0,
+                      width: 18.0,
+                    ),
+                    onPressed: () {
+                      _showReactionOverlay(context, id, reactions);
+                    },
+                  ),
+                  SizedBox(width: 7.0),
+                  ...reactions.entries.map((entry) {
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 16.0),
+                      child: Row(
+                        children: [
+                          Text(
+                            entry.key,
+                            style: TextStyle(fontSize: 16.0),
+                          ),
+                          SizedBox(width: 4.0),
+                          Text(
+                            entry.value.toString(),
+                            style: TextStyle(
+                              fontSize: 14.0,
+                              fontFamily: 'Quicksand',
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                ],
+              ),
+              SizedBox(height: 6.0),
+              Row(
+                children: [
+                  SvgPicture.asset(
+                    'assets/images/comments.svg',
+                    height: 16.0,
+                    width: 16.0,
+                  ),
+                  SizedBox(width: 8.0),
+                  Text(
+                    '$comments comments',
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                      fontSize: 14.0,
+                      fontFamily: 'Quicksand',
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
