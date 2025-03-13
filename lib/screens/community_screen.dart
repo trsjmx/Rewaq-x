@@ -27,7 +27,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
       print('Fetched posts: $fetchedPosts'); // Debug log
 
       setState(() {
-        posts = fetchedPosts;
+        posts = fetchedPosts.reversed.toList(); // Reverse the list to show the latest post first
         isLoading = false;
       });
     } catch (e) {
@@ -115,6 +115,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                     reactions: Map<String, int>.from(post['reactions']),
                     comments: post['comments'],
                     imageUrl: post['image_path'],
+                    profileImageUrl: post['user']['profile_image'], // Pass profile image URL
                   ))
               .toList(),
         ),
@@ -246,6 +247,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
     required Map<String, int> reactions,
     required int comments,
     String? imageUrl,
+    String? profileImageUrl, // Add profile image URL
   }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10.0), // Add vertical space
@@ -274,7 +276,9 @@ class _CommunityScreenState extends State<CommunityScreen> {
               Row(
                 children: [
                   CircleAvatar(
-                    backgroundImage: AssetImage('assets/images/avatar.png'),
+                    backgroundImage: profileImageUrl != null
+                        ? NetworkImage('http://rewaqx.test/storage/$profileImageUrl')
+                        : AssetImage('assets/images/avatar.png') as ImageProvider,
                   ),
                   SizedBox(width: 8.0),
                   Column(
