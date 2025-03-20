@@ -272,17 +272,17 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                     children: [
                       Icon(
                         Icons.check_circle,
-                        color: Colors.green,
-                        size: 50,
+                        color: Color(0xFF8028FF),
+                        size: 100,
                       ),
                       SizedBox(height: 10),
                       Text(
-                        'Success!',
+                        'Success 🎉!',
                         style: TextStyle(
                           fontFamily: 'Quicksand',
                           fontWeight: FontWeight.bold,
                           fontSize: 24,
-                          color: Colors.green,
+                          color: Color(0xFF8028FF),
                         ),
                       ),
                       SizedBox(height: 10),

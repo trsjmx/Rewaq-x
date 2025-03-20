@@ -94,6 +94,7 @@ flutter:
     - assets/images/avatar4.png
     - assets/images/avatar5.png
     - assets/images/avatar6.png
+    - assets/images/success.png
   fonts:
     - family: Quicksand
       fonts:
