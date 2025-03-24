@@ -38,18 +38,12 @@ class _CommunityScreenState extends State<CommunityScreen> {
     }
   }
 
-  // Update reactions for a post
-  void _updateReactions(String postId, Map<String, int> reactions, String emoji,
-      int points) async {
+    void _updateReactions(String postId, String emoji, int points) async {
     try {
-      await BackendService.addReaction(
-          postId, emoji, points); // Corrected method call
-      setState(() {
-        reactions[emoji] =
-            (reactions[emoji] ?? 0) + 1; // Update reactions locally
-      });
+      await BackendService.addReaction(postId, emoji, points);
+      _fetchPosts(); // Refresh posts after reacting
     } catch (e) {
-      print('Error updating reactions: $e'); // Debug log
+      print('Error updating reactions: $e');
     }
   }
 
@@ -163,13 +157,15 @@ class _CommunityScreenState extends State<CommunityScreen> {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
+      isScrollControlled: true, // Allow the sheet to take up more space
       builder: (BuildContext context) {
         return Container(
+          height: MediaQuery.of(context).size.height * 0.7, // Set height to 60% of screen height
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.vertical(top: Radius.circular(16.0)),
           ),
-          padding: EdgeInsets.all(16.0),
+          padding: EdgeInsets.all(20.0),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -182,7 +178,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                   color: Color(0xFF1B1D36),
                 ),
               ),
-              SizedBox(height: 8.0),
+              SizedBox(height: 10.0),
               Text(
                 'Show your support and appreciation! Each emoji comes with points that will be added to the post owner\'s score.',
                 textAlign: TextAlign.center,
@@ -206,8 +202,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                   final reaction = reactionOptions[index];
                   return GestureDetector(
                     onTap: () {
-                      _updateReactions(postId, reactions, reaction['emoji'],
-                          reaction['points']);
+                      _updateReactions(postId, reaction['emoji'], reaction['points']);
                       Navigator.pop(context);
                     },
                     child: Column(
@@ -351,7 +346,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                           ),
                           SizedBox(width: 4.0),
                           Text(
-                            entry.value.toString(),
+                            '${entry.value}', // Displaying the count of reactions
                             style: TextStyle(
                               fontSize: 14.0,
                               fontFamily: 'Quicksand',

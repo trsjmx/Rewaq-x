@@ -20,7 +20,7 @@ class BackendService {
         },
         'time': _formatTime(post['created_at']), // Format time
         'content': post['content'],
-        'reactions': _formatReactions(post['reactions']), // Format reactions
+        'reactions': _formatReactions(post['reactions'] ?? []), // Ensure reactions is a list
         'comments': post['comments'].length, // Count comments
         'image_path': post['image_path'],
       };
@@ -30,14 +30,10 @@ class BackendService {
   }
 }
 
-  // Add a reaction to a post
-  static Future<void> addReaction(String postId, String emoji, int points) async {
+static Future<void> addReaction(String postId, String emoji, int points) async {
     final response = await http.post(
-      Uri.parse('$baseUrl/api/posts/$postId/reactions'), // Correct endpoint
-      body: json.encode({
-        'emoji': emoji,
-        'points': points,
-      }),
+      Uri.parse('$baseUrl/api/posts/$postId/reactions'),
+      body: json.encode({'emoji': emoji, 'points': points}),
       headers: {'Content-Type': 'application/json'},
     );
 
@@ -66,12 +62,13 @@ class BackendService {
     }
   }
 
-  // Helper function to format reactions
   static Map<String, int> _formatReactions(List<dynamic> reactions) {
-    final Map<String, int> formattedReactions = {};
-    for (final reaction in reactions) {
-      formattedReactions[reaction['emoji']] = reaction['points'];
-    }
-    return formattedReactions;
+  final Map<String, int> formattedReactions = {};
+  for (final reaction in reactions) {
+    final emoji = reaction['emoji'] as String;
+    formattedReactions[emoji] = (formattedReactions[emoji] ?? 0) + 1;
   }
+  return formattedReactions;
+}
+
 }
