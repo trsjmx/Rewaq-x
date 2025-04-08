@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'otp_screen.dart'; // Import OTP Screen
-
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -12,6 +13,49 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _emailController = TextEditingController();
+  bool _isLoading = false; // Add a loading state
+
+  // Function to send OTP
+  Future<void> sendOtp() async {
+    setState(() {
+      _isLoading = true; // Show loading indicator
+    });
+
+    try {
+      final response = await http.post(
+        Uri.parse('http://127.0.0.1:8000/api/send-otp'), // Backend URL
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({"email": _emailController.text}),
+      );
+
+      if (response.statusCode == 200) {
+        // Navigate to OTP screen with the email as an argument
+        Navigator.pushNamed(
+          context,
+          '/otp',
+          arguments: _emailController.text, // Pass the email to OTPScreen
+        );
+      } else {
+        // Show an error message if OTP sending fails
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Failed to send OTP: ${response.body}"),
+          ),
+        );
+      }
+    } catch (e) {
+      // Handle network or server errors
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("An error occurred: $e"),
+        ),
+      );
+    } finally {
+      setState(() {
+        _isLoading = false; // Hide loading indicator
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -128,14 +172,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   width: double.infinity,
                   height: 48,
                   child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const OTPScreen(),
-                        ),
-                      );
-                    },
+                    onPressed: _isLoading ? null : sendOtp, // Disable button when loading
                     style: ElevatedButton.styleFrom(
                       elevation: 0,
                       backgroundColor: const Color.fromRGBO(122, 29, 255, 1),
@@ -143,14 +180,16 @@ class _LoginScreenState extends State<LoginScreen> {
                         borderRadius: BorderRadius.circular(8.0),
                       ),
                     ),
-                    child: const Text(
-                      'Log In',
-                      style: TextStyle(
-                        fontFamily: 'Quicksand',
-                        fontSize: 14,
-                        color: Colors.white,
-                      ),
-                    ),
+                    child: _isLoading
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : const Text(
+                            'Log In',
+                            style: TextStyle(
+                              fontFamily: 'Quicksand',
+                              fontSize: 14,
+                              color: Colors.white,
+                            ),
+                          ),
                   ),
                 ),
               ],

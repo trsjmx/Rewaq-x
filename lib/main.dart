@@ -26,7 +26,11 @@ class MyApp extends StatelessWidget {
       routes: {
         '/': (context) => SplashScreen(),
         '/login': (context) => LoginScreen(),
-        '/otp': (context) => OTPScreen(),
+        '/otp': (context) {
+          // Retrieve the email argument passed during navigation
+          final email = ModalRoute.of(context)!.settings.arguments as String?;
+          return OTPScreen(email: email ?? ""); // Pass the email to OTPScreen
+        },
         '/home': (context) => MainScreen(),
       },
     );

@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:pinput/pinput.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class OTPScreen extends StatefulWidget {
-  const OTPScreen({super.key});
+  final String email; // Add email parameter
+
+  const OTPScreen({super.key, required this.email});
 
   @override
   _OTPScreenState createState() => _OTPScreenState();
@@ -44,6 +48,30 @@ class _OTPScreenState extends State<OTPScreen> {
         startTimer();
       });
       // OTP resending logic must be here.
+    }
+  }
+
+  // Function to verify OTP
+  Future<void> verifyOtp() async {
+    final response = await http.post(
+      Uri.parse('http://127.0.0.1:8000/api/verify-otp'),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({
+        "email": widget.email,
+        "otp": _otpController.text,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      // Navigate to HomeScreen if OTP is verified successfully
+      Navigator.pushReplacementNamed(context, '/home');
+    } else {
+      // Show an error message if OTP verification fails
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Invalid OTP. Please try again."),
+        ),
+      );
     }
   }
 
@@ -93,9 +121,9 @@ class _OTPScreenState extends State<OTPScreen> {
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'Please enter the OTP sent to your email 4110400@upm.edu.sa',
-              style: TextStyle(
+            Text(
+              'Please enter the OTP sent to your email ${widget.email}', // Use the email parameter
+              style: const TextStyle(
                 fontFamily: 'Quicksand',
                 fontSize: 12,
                 color: Color.fromRGBO(108, 114, 120, 1),
@@ -161,11 +189,7 @@ class _OTPScreenState extends State<OTPScreen> {
                   width: double.infinity,
                   height: 48,
                   child: ElevatedButton(
-                    onPressed: () {
-                      // Handle OTP Verification
-                      // After verifying the OTP, navigate to the HomeScreen
-                      Navigator.pushReplacementNamed(context, '/home');
-                    },
+                    onPressed: verifyOtp, // Call the verifyOtp function
                     style: ElevatedButton.styleFrom(
                       elevation: 0,
                       backgroundColor: const Color.fromRGBO(122, 29, 255, 1),
