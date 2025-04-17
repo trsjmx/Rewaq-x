@@ -143,7 +143,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                                         reactions: Map<String, int>.from(post['reactions']),
                                         comments: post['comments'],
                                         imageUrl: post['image_path'],
-                                        profileImageUrl: post['user']['profile_image'], // Pass profile image URL
+                                        profileImageUrl: post['user']['image'], // Pass profile image URL
                                       ))
                                   .toList(),
                             ),
@@ -369,9 +369,12 @@ class _CommunityScreenState extends State<CommunityScreen> {
               Row(
                 children: [
                    CircleAvatar(
-                  backgroundImage: profileImageUrl != null
-                      ? NetworkImage('http://rewaqx.test/storage/$profileImageUrl')
-                      : AssetImage('assets/images/avatar.png') as ImageProvider,
+                    backgroundImage: (profileImageUrl != null && profileImageUrl!.isNotEmpty)
+                        ? NetworkImage(profileImageUrl!)
+                        : AssetImage('assets/images/avatar.png') as ImageProvider,
+                    onBackgroundImageError: (e, stack) {
+                      print('Failed to load profile image: $e');
+                    },
                   ),
                   SizedBox(width: 8.0),
                   Column(

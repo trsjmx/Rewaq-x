@@ -58,29 +58,54 @@ static Future<Map<String, dynamic>> fetchUserProfile(String userId) async {
 }
 
 static Future<List<dynamic>> fetchPosts() async {
-  final response = await http.get(Uri.parse('$baseUrl/api/posts'));
-  if (response.statusCode == 200) {
-    final List<dynamic> fetchedPosts = json.decode(response.body);
-    return fetchedPosts.map((post) {
-      final user = post['user'] ?? {};
-      final profile = user['profile'] ?? {};
-      
-      return {
-        'id': post['id'].toString(),
-        'user': {
-          'name': user['name'] ?? profile['name'] ?? 'Unknown',
-          'role': user['role'] ?? profile['role'] ?? 'Member',
-          'image': user['image'] ?? profile['image'], // Get image from user or profile
-        },
-        'time': _formatTime(post['created_at']),
-        'content': post['content'],
-        'reactions': _formatReactions(post['reactions'] ?? []),
-        'comments': post['comments'].length,
-        'image_path': post['image_path'],
-      };
-    }).toList();
-  } else {
-    throw Exception('Failed to load posts');
+  try {
+    final response = await http.get(Uri.parse('$baseUrl/api/posts'));
+    print('API Response Status: ${response.statusCode}');
+    print('API Response Body: ${response.body}');  // Debug output
+    
+    if (response.statusCode == 200) {
+      final List<dynamic> fetchedPosts = json.decode(response.body);
+      return fetchedPosts.map((post) {
+        final user = post['user'] ?? {};
+        final profile = user['profile'] ?? {};
+        
+        // Debug print to see what image data we're getting
+        print('User image: ${user['image']}');
+        print('Profile image: ${profile['image']}');
+        
+        // Handle image URL - use whichever exists (user.image or profile.image)
+        String? imageUrl;
+        if (user['image'] != null) {
+          imageUrl = user['image'].toString();
+        } else if (profile['image'] != null) {
+          imageUrl = profile['image'].toString();
+        }
+        
+        // If the URL doesn't start with http, prepend base URL
+        if (imageUrl != null && !imageUrl.startsWith('http')) {
+          imageUrl = '$baseUrl/storage/$imageUrl';
+        }
+        
+        return {
+          'id': post['id'].toString(),
+          'user': {
+            'name': user['name'] ?? profile['name'] ?? 'Unknown',
+            'role': user['role'] ?? profile['role'] ?? 'Member',
+            'image': imageUrl,  // Use the processed URL
+          },
+          'time': _formatTime(post['created_at']),
+          'content': post['content'],
+          'reactions': _formatReactions(post['reactions'] ?? []),
+          'comments': post['comments'].length,
+          'image_path': post['image_path'],
+        };
+      }).toList();
+    } else {
+      throw Exception('Failed to load posts: ${response.statusCode}');
+    }
+  } catch (e) {
+    print('Error in fetchPosts: $e');
+    throw Exception('Failed to fetch posts: $e');
   }
 }
 
