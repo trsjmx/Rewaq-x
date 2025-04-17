@@ -1,8 +1,52 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:rewaqx/services/backend_service.dart';
 
-class ProfileScreen extends StatelessWidget {
+
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  String userName = "Loading...";
+  String userRole = "Loading...";
+  String userDepartment = "Loading...";
+  String? userImageUrl; // Add this line
+
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchProfileData();
+  }
+
+  Future<void> _fetchProfileData() async {
+    try {
+      final userData = await BackendService.fetchUserProfile('1'); // Use actual user ID
+      setState(() {
+        userName = userData['name'];
+        userRole = userData['role'];
+        userDepartment = userData['department'];
+        userImageUrl = userData['image']; // Add this line
+
+        isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        userName = "Error loading data";
+        userRole = "";
+        userDepartment = "";
+        isLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to load profile: ${e.toString()}')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -38,7 +82,9 @@ class ProfileScreen extends StatelessWidget {
                   ),
                   child: CircleAvatar(
                     radius: 60, 
-                    backgroundImage: AssetImage('assets/images/avatar.png'),
+                    backgroundImage: userImageUrl != null 
+                      ? NetworkImage(userImageUrl!) 
+                      : AssetImage('assets/images/avatar.png') as ImageProvider,
                   ),
                 ),
 
@@ -58,28 +104,27 @@ class ProfileScreen extends StatelessWidget {
               ],
             ),
           ),
-
           SizedBox(height: 8), 
           
           // User Name and Job Title
           Text(
-            "Tasneem Alhattami",
-            style: TextStyle(
-              fontFamily: 'Quicksand',
-              fontSize: 22,
-              fontWeight: FontWeight.w600, 
-              color: Color.fromRGBO(27, 29, 54, 1),
+              userName,
+              style: TextStyle(
+                fontFamily: 'Quicksand',
+                fontSize: 22,
+                fontWeight: FontWeight.w600,
+                color: Color.fromRGBO(27, 29, 54, 1),
+              ),
             ),
-          ),
-          
+                
           SizedBox(height: 5),
 
           Text(
-            'Sw Engineer IT Department',
+            '$userRole • $userDepartment',
             style: TextStyle(
               fontFamily: 'Quicksand',
               fontSize: 14,
-              fontWeight: FontWeight.w400, 
+              fontWeight: FontWeight.w400,
               color: Color.fromRGBO(108, 114, 120, 1),
             ),
           ),

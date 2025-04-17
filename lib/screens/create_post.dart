@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:path/path.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class CreatePostScreen extends StatefulWidget {
   const CreatePostScreen({super.key});
@@ -16,8 +17,9 @@ class CreatePostScreen extends StatefulWidget {
 class _CreatePostScreenState extends State<CreatePostScreen> {
   final TextEditingController _postController = TextEditingController();
   String? _imagePath;
-  bool _isPosting = false; // To track if the post is being created
-  bool _showSuccessScreen = false; // To control the visibility of the success screen
+  XFile? _imageFile;
+  bool _isPosting = false;
+  bool _showSuccessScreen = false;
 
   @override
   void dispose() {
@@ -25,52 +27,58 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     super.dispose();
   }
 
-  // Method to handle image selection
   Future<void> _pickImage() async {
     final ImagePicker picker = ImagePicker();
-
-    // Pick an image from the gallery
     final XFile? pickedFile = await picker.pickImage(source: ImageSource.gallery);
 
     if (pickedFile != null) {
       setState(() {
         _imagePath = pickedFile.path;
+        _imageFile = pickedFile;
       });
     } else {
-      // Handle the case when no image is selected
       print('No image selected');
     }
   }
 
-  // Method to send the post data to the backend
+  void _removeImage() {
+    setState(() {
+      _imagePath = null;
+      _imageFile = null;
+    });
+  }
+
   Future<void> createPost(String content, String? imagePath) async {
-    final url = Uri.parse('http://rewaqx.test/api/posts'); // Replace with your API endpoint
-
-    // Create a multipart request
+    final url = Uri.parse('http://rewaqx.test/api/posts');
     var request = http.MultipartRequest('POST', url);
-
-    // Add the post content
     request.fields['content'] = content;
 
-    // Add the image file if it exists
-    if (imagePath != null) {
-      var file = File(imagePath);
-      var stream = http.ByteStream(file.openRead());
-      var length = await file.length();
-      var multipartFile = http.MultipartFile(
-        'image',
-        stream,
-        length,
-        filename: basename(file.path),
-        contentType: MediaType('image', 'jpeg'), // Adjust the content type if needed
-      );
-      request.files.add(multipartFile);
+    if (_imageFile != null) {
+      if (kIsWeb) {
+        final bytes = await _imageFile!.readAsBytes();
+        var multipartFile = http.MultipartFile.fromBytes(
+          'image',
+          bytes,
+          filename: _imageFile!.name,
+          contentType: MediaType('image', 'jpeg'),
+        );
+        request.files.add(multipartFile);
+      } else {
+        var file = File(_imageFile!.path);
+        var stream = http.ByteStream(file.openRead());
+        var length = await file.length();
+        var multipartFile = http.MultipartFile(
+          'image',
+          stream,
+          length,
+          filename: basename(file.path),
+          contentType: MediaType('image', 'jpeg'),
+        );
+        request.files.add(multipartFile);
+      }
     }
 
-    // Send the request
     var response = await request.send();
-
-    // Check the response
     if (response.statusCode == 201) {
       print('Post created successfully');
     } else {
@@ -78,18 +86,16 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     }
   }
 
-  // Method to show the success screen and navigate back
   void _showSuccessAndNavigate(BuildContext context) {
     setState(() {
-      _showSuccessScreen = true; // Show the success screen
+      _showSuccessScreen = true;
     });
 
-    // Wait for 2 seconds and then navigate back to the community screen
     Future.delayed(Duration(seconds: 2), () {
       setState(() {
-        _showSuccessScreen = false; // Hide the success screen
+        _showSuccessScreen = false;
       });
-      Navigator.pop(context, true); // Pass `true` to indicate a refresh is needed
+      Navigator.pop(context, true);
     });
   }
 
@@ -98,17 +104,17 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     return Scaffold(
       backgroundColor: Color(0xFFFAFAFC),
       appBar: PreferredSize(
-        preferredSize: Size.fromHeight(80.0), // Set the height to your desired value
+        preferredSize: Size.fromHeight(80.0),
         child: AppBar(
-          backgroundColor: Colors.white, // White background
-          elevation: 0, // Remove default shadow
+          backgroundColor: Colors.white,
+          elevation: 0,
           title: const Text(
             'Create Post',
             style: TextStyle(
               fontFamily: 'Quicksand',
-              fontWeight: FontWeight.bold, // Bold text
-              fontSize: 18, // Font size 18
-              color: Color(0xFF7A1DFF), // Color #7A1DFF
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+              color: Color(0xFF7A1DFF),
             ),
           ),
           leading: IconButton(
@@ -119,8 +125,8 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
             ),
             onPressed: () => Navigator.of(context).pop(),
           ),
-          centerTitle: true, // Center the title
-          shadowColor: const Color(0x1A1B1D36), // Shadow color with 10% opacity
+          centerTitle: true,
+          shadowColor: const Color(0x1A1B1D36),
           shape: const RoundedRectangleBorder(
             side: BorderSide(color: Colors.transparent),
             borderRadius: BorderRadius.vertical(
@@ -132,9 +138,9 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
               color: Colors.white,
               boxShadow: [
                 BoxShadow(
-                  color: Color(0x1A1B1D36), // Shadow color with 10% opacity
-                  offset: Offset(0, 4), // Position: y = 4
-                  blurRadius: 20, // Blur radius: 20
+                  color: Color(0x1A1B1D36),
+                  offset: Offset(0, 4),
+                  blurRadius: 20,
                 ),
               ],
             ),
@@ -163,22 +169,51 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                     fontSize: 16.0,
                   ),
                   onChanged: (text) {
-                    // Update the state to enable/disable the Share button
                     setState(() {});
                   },
                 ),
                 if (_imagePath != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 5.0),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(10.0),
-                      child: Image.file(
-                        File(_imagePath!),
-                        fit: BoxFit.cover,
-                        width: double.infinity,
-                        height: 200,
+                  Stack(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(top: 5.0),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(10.0),
+                          child: kIsWeb
+                              ? Image.network(
+                                  _imagePath!,
+                                  fit: BoxFit.cover,
+                                  width: double.infinity,
+                                  height: 200,
+                                )
+                              : Image.file(
+                                  File(_imagePath!),
+                                  fit: BoxFit.cover,
+                                  width: double.infinity,
+                                  height: 200,
+                                ),
+                        ),
                       ),
-                    ),
+                      Positioned(
+                        top: 15,
+                        right: 15,
+                        child: GestureDetector(
+                          onTap: _removeImage,
+                          child: Container(
+                            padding: EdgeInsets.all(5),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(0.5),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.close,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   )
                 else
                   const SizedBox.shrink(),
@@ -186,7 +221,6 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                 const Spacer(),
                 Row(
                   children: [
-                    // Add Image Button
                     IconButton(
                       onPressed: _pickImage,
                       icon: Icon(
@@ -195,27 +229,21 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                       ),
                     ),
                     const Spacer(),
-                    // Share Button
                     ElevatedButton(
                       onPressed: _postController.text.trim().isEmpty || _isPosting
-                          ? null // Disable the button if there's no text or posting is in progress
+                          ? null
                           : () async {
-                              // Handle post creation
                               final postContent = _postController.text.trim();
                               if (postContent.isNotEmpty) {
                                 setState(() {
-                                  _isPosting = true; // Set posting state to true
+                                  _isPosting = true;
                                 });
 
                                 try {
-                                  // Send the post data to the backend
                                   await createPost(postContent, _imagePath);
-
-                                  // Show success screen and navigate back
                                   _showSuccessAndNavigate(context);
                                 } catch (e) {
                                   print('Error creating post: $e');
-                                  // Show an error message to the user
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
                                       content: Text('Failed to create post. Please try again.'),
@@ -224,22 +252,22 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                                   );
                                 } finally {
                                   setState(() {
-                                    _isPosting = false; // Reset posting state
+                                    _isPosting = false;
                                   });
                                 }
                               }
                             },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: _postController.text.trim().isEmpty || _isPosting
-                            ? Colors.grey[300] // Disabled color
-                            : Color(0xFF2AD2C9), // Enabled color
+                            ? Colors.grey[300]
+                            : Color(0xFF2AD2C9),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(22.0),
                         ),
                         padding: EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
                       ),
                       child: _isPosting
-                          ? CircularProgressIndicator(color: Colors.white) // Show a loader while posting
+                          ? CircularProgressIndicator(color: Colors.white)
                           : const Text(
                               'Share',
                               style: TextStyle(
@@ -256,10 +284,9 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
             ),
           ),
 
-          // Success Screen Overlay
           if (_showSuccessScreen)
             Container(
-              color: Colors.black.withOpacity(0.5), // Semi-transparent background
+              color: Colors.black.withOpacity(0.5),
               child: Center(
                 child: Container(
                   padding: EdgeInsets.all(20),
