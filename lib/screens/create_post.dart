@@ -49,13 +49,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   }
 
   Future<void> createPost(String content, String? imagePath) async {
-<<<<<<< HEAD
-    final url = Uri.parse('http://172.20.10.3:8000/api/posts'); // Replace with your API endpoint
-
-    // Create a multipart request
-=======
-    final url = Uri.parse('http://rewaqx.test/api/posts');
->>>>>>> 664f412ada2dcaa3120907ce4437367dc8b22dc7
+    final url = Uri.parse('http://172.20.10.3:8000/api/posts');
     var request = http.MultipartRequest('POST', url);
     request.fields['content'] = content;
 

@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class BackendService {
-  static const String baseUrl = 'http://rewaqx.test'; // Replace with your backend URL
+  static const String baseUrl = 'http://172.20.10.3:8000'; // Replace with your backend URL
   
   static Future<Map<String, dynamic>> fetchUserData(String userId) async {
   try {
