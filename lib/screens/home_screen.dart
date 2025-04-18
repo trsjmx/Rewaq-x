@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'voucher_screen.dart';
-import 'package:health/health.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:rewaqx/services/backend_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -11,177 +10,169 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  bool _dialogShown = false;
+  String userName = "Loading...";
+  int userPoints = 0;
+  bool isLoading = true;
+  String? userImage; // Add this line
+
 
   @override
   void initState() {
     super.initState();
-    _checkAndShowDialog();
-  }
-
-  Future<void> _checkAndShowDialog() async {
-    final prefs = await SharedPreferences.getInstance();
-    final bool dialogShownBefore = prefs.getBool('healthDialogShown') ?? false;
-    
-    if (!dialogShownBefore) {
-      await prefs.setBool('healthDialogShown', true);
-      if (mounted) {
-        _showPermissionDialog();
-      }
-    }
-  }
-
-  void fetchHealthData() async {
-    final HealthFactory health = HealthFactory();
-
-    final types = <HealthDataType>[
-      HealthDataType.HEART_RATE,
-      HealthDataType.HEART_RATE_VARIABILITY_SDNN,
-      HealthDataType.ACTIVE_ENERGY_BURNED,
-      HealthDataType.WORKOUT,
-      HealthDataType.STEPS,
-      HealthDataType.MOVE_MINUTES,
-    ];
-
-    final bool requested = await health.requestAuthorization(types);
-
-    if (requested) {
-      final now = DateTime.now();
-      final yesterday = now.subtract(Duration(days: 1));
-
-      try {
-        final List<HealthDataPoint> healthData = await health.getHealthDataFromTypes(
-          yesterday,
-          now,
-          types,
-        );
-
-        print('Finished fetching health data. Total points: ${healthData.length}');
-      } catch (e) {
-        print('Error fetching health data: $e');
-      }
-    } else {
-      print('Authorization not granted');
-    }
+    _fetchUserData();
+    _showPermissionDialog();
   }
 
   void _showPermissionDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return Dialog(
-          backgroundColor: Color(0xB3B3B3D1),
-          insetPadding: const EdgeInsets.symmetric(horizontal: 10),
-          child: Container(
-            width: 220,
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-            decoration: BoxDecoration(
-              color: Color.fromARGB(179, 252, 252, 255),
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(8),
-                topRight: Radius.circular(8),
-                bottomLeft: Radius.circular(10),
-                bottomRight: Radius.circular(10),
+    Future.delayed(Duration.zero, () {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return Dialog(
+            backgroundColor: Color(0xB3B3B3D1),
+            insetPadding: const EdgeInsets.symmetric(horizontal: 10),
+            child: Container(
+              width: 220,
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              decoration: BoxDecoration(
+                color: Color.fromARGB(179, 252, 252, 255),
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(8), 
+                  topRight: Radius.circular(8),
+                  bottomLeft: Radius.circular(10),
+                  bottomRight: Radius.circular(10),
+                ), 
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 8,
+                    offset: Offset(0, 4),
+                  ),
+                ],
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 8,
-                  offset: Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                const Text(
-                  'Rewaq wants to access data from your Health app',
-                  style: TextStyle(
-                    fontFamily: 'SF Pro Display',
-                    fontWeight: FontWeight.w700,
-                    fontSize: 12,
-                    color: Color.fromARGB(255, 5, 5, 5),
-                    letterSpacing: -0.4,
-                    height: 1.3,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 10),
-                const Text(
-                  "We use your smartwatch data to analyze stress, fatigue, and emotional states, helping you stay at your best.",
-                  style: TextStyle(
-                    fontFamily: 'SF Pro Display',
-                    fontWeight: FontWeight.w300,
-                    fontSize: 10,
-                    color: Color.fromARGB(255, 8, 8, 8),
-                    height: 1.4,
-                    letterSpacing: 0,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 15),
-                const Divider(color: Colors.grey, thickness: 0.5),
-                const SizedBox(height: 8),
-                Column(
-                  children: [
-                    TextButton(
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                        fetchHealthData(); // This will open the health app permissions
-                      },
-                      style: TextButton.styleFrom(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 18),
-                      ),
-                      child: const Text(
-                        "Allow",
-                        style: TextStyle(
-                          color: Color(0xFF007AFF),
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                          letterSpacing: -0.4,
-                        ),
-                      ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  const Text(
+                    '"Rewaq" Would Like to Access Your "Fitness" App Data',
+                    style: TextStyle(
+                      fontFamily: 'SF Pro Display',
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12,
+                      color: Color.fromARGB(255, 5, 5, 5),
+                      letterSpacing: -0.4,
+                      height: 1.3,
                     ),
-                    const SizedBox(height: 8),
-                    const Divider(color: Colors.grey, thickness: 0.5),
-                    const SizedBox(height: 8),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                      },
-                      style: TextButton.styleFrom(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 18),
-                      ),
-                      child: const Text(
-                        "Don't Allow",
-                        style: TextStyle(
-                          color: Color(0xFF007AFF),
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: -0.4,
-                        ),
-                      ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 10),
+                  const Text(
+                    "We use your smartwatch data to analyze stress, fatigue, and emotional states, helping you stay at your best.",
+                    style: TextStyle(
+                      fontFamily: 'SF Pro Display',
+                      fontWeight: FontWeight.w300,
+                      fontSize: 10,
+                      color: Color.fromARGB(255, 8, 8, 8),
+                      height: 1.4,
+                      letterSpacing: 0,
                     ),
-                  ],
-                ),
-              ],
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 15),
+                  const Divider(color: Colors.grey, thickness: 0.5),
+                  const SizedBox(height: 8),
+                  Column(
+                    children: [
+                      TextButton(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                        },
+                        style: TextButton.styleFrom(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 18),
+                        ),
+                        child: const Text(
+                          "Allow",
+                          style: TextStyle(
+                            color: Color(0xFF007AFF),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            letterSpacing: -0.4,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      const Divider(color: Colors.grey, thickness: 0.5),
+                      const SizedBox(height: 8),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                        },
+                        style: TextButton.styleFrom(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 18),
+                        ),
+                        child: const Text(
+                          "Don't Allow",
+                          style: TextStyle(
+                            color: Color(0xFF007AFF),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: -0.4,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-        );
-      },
-    );
+          );
+        },
+      );
+    });
   }
 
+   Future<void> _fetchUserData() async {
+    try {
+      print('Fetching user data...');
+      final userData = await BackendService.fetchUserData('1');
+      print('Received data: $userData');
+      
+      setState(() {
+        userName = userData['name']?.toString() ?? 'User';
+        userPoints = (userData['points'] is int) ? userData['points'] : 
+                    int.tryParse(userData['points']?.toString() ?? '0') ?? 0;
+        userImage = userData['image']; // Add this line
+        isLoading = false;
+      });
+    } catch (e) {
+      print('Error in _fetchUserData: $e');
+      setState(() {
+        userName = "User";
+        userPoints = 0;
+        userImage = null; // Add this line
+        isLoading = false;
+      });
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: ${e.toString()}')),
+      );
+    }
+  }
+  
   @override
   Widget build(BuildContext context) {
+    if (isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5FA),
       appBar: PreferredSize(
@@ -222,26 +213,28 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 20),
               Row(
                 children: [
-                  const CircleAvatar(
-                    radius: 30,
-                    backgroundImage: AssetImage('assets/images/avatar.png'),
-                  ),
+                   CircleAvatar(
+                  radius: 30,
+                  backgroundImage: userImage != null 
+                      ? NetworkImage(userImage!) as ImageProvider
+                      : AssetImage('assets/images/avatar.png') as ImageProvider,
+                ),
                   const SizedBox(width: 15),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
+                      children: [
                         Text(
-                          "Hello, Tasneem 👋",
-                          style: TextStyle(
+                          "Hello, $userName 👋",
+                          style: const TextStyle(
                             fontFamily: 'Quicksand',
                             fontSize: 18,
                             fontWeight: FontWeight.w700,
                             color: Colors.black,
                           ),
                         ),
-                        SizedBox(height: 4),
-                        Text(
+                        const SizedBox(height: 4),
+                        const Text(
                           "Let's make today productive, and filled with small wins.",
                           style: TextStyle(
                             fontFamily: 'Quicksand',
@@ -256,8 +249,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
               const SizedBox(height: 20),
-
-              // Points Card with Updated Height and Bottom-Aligned Content
               Stack(
                 clipBehavior: Clip.none,
                 children: [
@@ -303,9 +294,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                               ),
                               const SizedBox(height: 5),
-                              const Text(
-                                "500 Points",
-                                style: TextStyle(
+                              Text(
+                                "$userPoints Points",
+                                style: const TextStyle(
                                   fontFamily: 'Quicksand',
                                   fontSize: 36,
                                   fontWeight: FontWeight.w700,
@@ -315,7 +306,6 @@ class _HomeScreenState extends State<HomeScreen> {
                             ],
                           ),
                         ),
-
                         Positioned(
                           bottom: 0,
                           right: 15,
@@ -330,7 +320,6 @@ class _HomeScreenState extends State<HomeScreen> {
                                     const begin = Offset(0.0, 1.0);
                                     const end = Offset.zero;
                                     const curve = Curves.easeInOut;
-
                                     var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
                                     return SlideTransition(
                                       position: animation.drive(tween),
@@ -361,8 +350,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
               const SizedBox(height: 30),
-
-              // Celebrations Section
               Container(
                 padding: const EdgeInsets.all(15),
                 decoration: BoxDecoration(
@@ -388,16 +375,13 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                     const SizedBox(height: 12),
-
                     Column(
                       children: [
                         const Divider(color: Colors.grey, thickness: 0.3),
                         CelebrationItem(title: "Mohammed & 1 other", description: "joined the team today", avatars: ['avatar1.png', 'avatar2.png']),
                         const Divider(color: Colors.grey, thickness: 0.3),
-
                         CelebrationItem(title: "Sara & 2 others", description: "birthday is today", avatars: ['avatar3.png', 'avatar4.png', 'avatar5.png']),
                         const Divider(color: Colors.grey, thickness: 0.3),
-
                         CelebrationItem(title: "Ali Alharbi", description: "5th work anniversary", avatars: ['avatar6.png']),
                       ],
                     ),
@@ -442,7 +426,6 @@ class CelebrationItem extends StatelessWidget {
                 children: avatars.asMap().entries.map((entry) {
                   int index = entry.key;
                   String avatar = entry.value;
-
                   return Positioned(
                     left: (index * 22).toDouble(),
                     child: Container(

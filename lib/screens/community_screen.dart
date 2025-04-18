@@ -13,13 +13,18 @@ class CommunityScreen extends StatefulWidget {
 class _CommunityScreenState extends State<CommunityScreen> {
   List<dynamic> posts = []; // List to store posts fetched from the backend
   bool isLoading = true; // Loading state
+  bool _showInsufficientPointsOverlay = false; // New state for overlay
+  
 
   @override
   void initState() {
     super.initState();
-    _fetchPosts(); // Fetch posts when the screen loads
+    if (mounted) {
+      _fetchPosts();
+    }
   }
 
+  
   // Fetch posts from the backend
   Future<void> _fetchPosts() async {
     try {
@@ -38,25 +43,37 @@ class _CommunityScreenState extends State<CommunityScreen> {
     }
   }
 
-    void _updateReactions(String postId, String emoji, int points) async {
-    try {
-      await BackendService.addReaction(postId, emoji, points);
-      _fetchPosts(); // Refresh posts after reacting
-    } catch (e) {
-      print('Error updating reactions: $e');
+  void _updateReactions(String postId, String emoji, int points) async {
+  try {
+    await BackendService.addReaction(postId, emoji, points);
+    _fetchPosts(); // Refresh posts after reacting
+  } catch (e) {
+    print('Error updating reactions: $e');
+    if (e.toString().contains('Not enough points')) {
+      setState(() {
+        _showInsufficientPointsOverlay = true;
+      });
+      // Hide the overlay after 3 seconds
+      Future.delayed(Duration(seconds: 3), () {
+        if (mounted) {
+          setState(() {
+            _showInsufficientPointsOverlay = false;
+          });
+        }
+      });
+    } else {
+      // Show a generic error message if needed
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: ${e.toString()}'),
+        ),
+      );
     }
   }
+}
 
   @override
   Widget build(BuildContext context) {
-    if (isLoading) {
-      return Center(child: CircularProgressIndicator());
-    }
-
-    if (posts.isEmpty) {
-      return Center(child: Text('No posts available.'));
-    }
-
     return Scaffold(
       backgroundColor: Color(0xFFFAFAFC),
       appBar: PreferredSize(
@@ -96,23 +113,102 @@ class _CommunityScreenState extends State<CommunityScreen> {
           ),
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: posts
-              .map((post) => _buildPost(
-                    id: post['id'],
-                    name: post['user']['name'],
-                    role: post['user']['role'],
-                    time: post['time'],
-                    content: post['content'],
-                    reactions: Map<String, int>.from(post['reactions']),
-                    comments: post['comments'],
-                    imageUrl: post['image_path'],
-                    profileImageUrl: post['user']['profile_image'], // Pass profile image URL
-                  ))
-              .toList(),
-        ),
+      body: Stack(
+        children: [
+          Column(
+            children: [
+              Expanded(
+                child: isLoading
+                    ? Center(child: CircularProgressIndicator())
+                    : posts.isEmpty
+                        ? Center(
+                            child: Text(
+                              'No posts available.',
+                              style: TextStyle(
+                                fontFamily: 'Quicksand',
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          )
+                        : SingleChildScrollView(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Column(
+                              children: posts
+                                  .map((post) => _buildPost(
+                                        id: post['id'],
+                                        name: post['user']['name'],
+                                        role: post['user']['role'],
+                                        time: post['time'],
+                                        content: post['content'],
+                                        reactions: Map<String, int>.from(post['reactions']),
+                                        comments: post['comments'],
+                                        imageUrl: post['image_path'],
+                                        profileImageUrl: post['user']['image'], // Pass profile image URL
+                                      ))
+                                  .toList(),
+                            ),
+                          ),
+              ),
+            ],
+          ),
+          // Insufficient Points Overlay
+          if (_showInsufficientPointsOverlay)
+            Container(
+              color: Colors.black.withOpacity(0.5), // Semi-transparent background
+              child: Center(
+                child: Container(
+                  padding: EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                          '😢', // Crying face emoji as the icon
+                          style: TextStyle(
+                            fontSize: 100, // Adjust size to match your needs
+                            color: Color(0xFFFF5722), // Same orange color
+                          ),
+                        ),
+                        SizedBox(height: 10),
+                      
+                      Text(
+                        'Oops!',
+                        style: TextStyle(
+                          fontFamily: 'Quicksand',
+                          fontWeight: FontWeight.bold,
+                          fontSize: 24,
+                          color: Color(0xFFFF5722),
+                        ),
+                      ),
+                      SizedBox(height: 10),
+                      Text(
+                        'You don\'t have enough points to send reactions to your colleagues.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontFamily: 'Quicksand',
+                          fontSize: 16,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                      SizedBox(height: 5),
+                      Text(
+                        'Try sharing your moments in the community to get more points😀!',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontFamily: 'Quicksand',
+                          fontSize: 16,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         shape: CircleBorder(),
@@ -163,8 +259,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
           height: MediaQuery.of(context).size.height * 0.7, // Set height to 60% of screen height
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(16.0)),
-          ),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(16.0)),),
           padding: EdgeInsets.all(20.0),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -242,24 +337,26 @@ class _CommunityScreenState extends State<CommunityScreen> {
     required Map<String, int> reactions,
     required int comments,
     String? imageUrl,
-    String? profileImageUrl, // Add profile image URL
+    String? profileImageUrl,
   }) {
+    // Debug print to check what URL we're getting
+  debugPrint('Profile image URL: $profileImageUrl');
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10.0), // Add vertical space
+      padding: const EdgeInsets.symmetric(vertical: 10.0),
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(8.0), // Rounded corners
+          borderRadius: BorderRadius.circular(8.0),
           border: Border.all(
-            color: Color(0xFFF4F4F4), // Border color
-            width: 1.0, // Border thickness
+            color: Color(0xFFF4F4F4),
+            width: 1.0,
           ),
           boxShadow: [
             BoxShadow(
-              color: Color(0x1A000000), // Shadow color
-              offset: Offset(0, 2), // Shadow offset
-              blurRadius: 10, // Shadow blur
-              spreadRadius: 0, // Shadow spread
+              color: Color(0x1A000000),
+              offset: Offset(0, 2),
+              blurRadius: 10,
+              spreadRadius: 0,
             ),
           ],
         ),
@@ -268,12 +365,16 @@ class _CommunityScreenState extends State<CommunityScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // User info row
               Row(
                 children: [
-                  CircleAvatar(
-                    backgroundImage: profileImageUrl != null
-                        ? NetworkImage('http://rewaqx.test/storage/$profileImageUrl')
+                   CircleAvatar(
+                    backgroundImage: (profileImageUrl != null && profileImageUrl!.isNotEmpty)
+                        ? NetworkImage(profileImageUrl!)
                         : AssetImage('assets/images/avatar.png') as ImageProvider,
+                    onBackgroundImageError: (e, stack) {
+                      print('Failed to load profile image: $e');
+                    },
                   ),
                   SizedBox(width: 8.0),
                   Column(
@@ -299,29 +400,60 @@ class _CommunityScreenState extends State<CommunityScreen> {
                   ),
                 ],
               ),
+              
               SizedBox(height: 8.0),
+              
+              // Post content
               Text(
                 content,
                 style: TextStyle(
                   fontFamily: 'Quicksand',
                 ),
               ),
+              
+              // Post image (if available)
               if (imageUrl != null && imageUrl.isNotEmpty)
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(10.0),
-                  child: Image.network(
-                    'http://rewaqx.test/storage/$imageUrl',
-                    fit: BoxFit.cover,
-                    width: double.infinity,
-                    height: 200,
+                Padding(
+                  padding: const EdgeInsets.only(top: 8.0),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(10.0),
+                    child: Image.network(
+                      imageUrl,
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      height: 200,
+                      loadingBuilder: (BuildContext context, Widget child, ImageChunkEvent? loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return Container(
+                          height: 200,
+                          child: Center(
+                            child: CircularProgressIndicator(
+                              value: loadingProgress.expectedTotalBytes != null
+                                  ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                                  : null,
+                            ),
+                          ),
+                        );
+                      },
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        height: 200,
+                        color: Colors.grey[200],
+                        child: Center(
+                          child: Icon(Icons.broken_image, color: Colors.grey[400]),
+                        ),
+                      ),
+                    ),
                   ),
                 ),
+              
               SizedBox(height: 8.0),
               Divider(
                 color: Color(0xFFF4F4F4),
                 thickness: 1.0,
               ),
               SizedBox(height: 2.0),
+              
+              // Reactions row
               Row(
                 children: [
                   IconButton(
@@ -346,7 +478,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                           ),
                           SizedBox(width: 4.0),
                           Text(
-                            '${entry.value}', // Displaying the count of reactions
+                            '${entry.value}',
                             style: TextStyle(
                               fontSize: 14.0,
                               fontFamily: 'Quicksand',
@@ -355,10 +487,13 @@ class _CommunityScreenState extends State<CommunityScreen> {
                         ],
                       ),
                     );
-                  }),
+                  }).toList(),
                 ],
               ),
+              
               SizedBox(height: 6.0),
+              
+              // Comments row
               Row(
                 children: [
                   SvgPicture.asset(
