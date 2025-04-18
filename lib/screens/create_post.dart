@@ -44,7 +44,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
 
   // Method to send the post data to the backend
   Future<void> createPost(String content, String? imagePath) async {
-    final url = Uri.parse('http://rewaqx.test/api/posts'); // Replace with your API endpoint
+    final url = Uri.parse('http://172.20.10.3:8000/api/posts'); // Replace with your API endpoint
 
     // Create a multipart request
     var request = http.MultipartRequest('POST', url);

@@ -4,6 +4,10 @@
 <dict>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>NSHealthShareUsageDescription</key>
+	<string>We use your health data to help you track your wellness</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>We use your health data to provide personalized feedback</string>
 	<key>CFBundleDisplayName</key>
 	<string>Rewaqx</string>
 	<key>CFBundleExecutable</key>
@@ -45,10 +49,9 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
-  <key>NSPhotoLibraryUsageDescription</key>
-  <string>We need access to your photo library</string>
-  <key>NSCameraUsageDescription</key>
-  <string>We need access to your camera</string>
-
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>We need access to your photo library</string>
+	<key>NSCameraUsageDescription</key>
+	<string>We need access to your camera</string>
 </dict>
 </plist>

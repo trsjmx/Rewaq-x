@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'otp_screen.dart'; // Import OTP Screen
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
@@ -23,7 +22,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       final response = await http.post(
-        Uri.parse('http://127.0.0.1:8000/api/send-otp'), // Backend URL
+        Uri.parse('http://172.20.10.3:8000/api/send-otp'), // Backend URL
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({"email": _emailController.text}),
       );

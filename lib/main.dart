@@ -8,6 +8,7 @@ import 'package:rewaqx/screens/events_screen.dart';
 import 'package:rewaqx/screens/splash_screen.dart';
 import 'package:rewaqx/screens/login_screen.dart';
 import 'package:rewaqx/screens/otp_screen.dart';
+import 'package:health/health.dart';
 
 void main() {
   runApp(MyApp());
@@ -130,4 +131,6 @@ class _MainScreenState extends State<MainScreen> {
       ),
     );
   }
+
+  
 }
