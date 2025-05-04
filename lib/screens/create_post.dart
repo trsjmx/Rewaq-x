@@ -49,7 +49,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   }
 
   Future<void> createPost(String content, String? imagePath) async {
-    final url = Uri.parse('http://172.20.10.3:8000/api/posts');
+    final url = Uri.parse('http://172.20.10.2:8000/api/posts');
     var request = http.MultipartRequest('POST', url);
     request.fields['content'] = content;
 

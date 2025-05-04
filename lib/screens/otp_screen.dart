@@ -54,7 +54,7 @@ class _OTPScreenState extends State<OTPScreen> {
   // Function to verify OTP
   Future<void> verifyOtp() async {
     final response = await http.post(
-      Uri.parse('http://172.20.10.3:8000/api/verify-otp'),
+      Uri.parse('http://172.20.10.2:8000/api/verify-otp'),
       headers: {"Content-Type": "application/json"},
       body: jsonEncode({
         "email": widget.email,

@@ -1,8 +1,17 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'voucher_screen.dart';
 import 'package:rewaqx/services/backend_service.dart';
 import 'package:health/health.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'dart:async'; 
+import 'package:rewaqx/services/health_service.dart';
+import 'package:flutter/scheduler.dart';
+import 'package:rewaqx/services/stress_management_service.dart';
+import 'package:rewaqx/services/notification_service.dart';
+import 'package:rewaqx/services/ollama_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -11,166 +20,361 @@ class HomeScreen extends StatefulWidget {
   _HomeScreenState createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   String userName = "Loading...";
   int userPoints = 0;
   bool isLoading = true;
   String? userImage;
   bool _healthDialogShown = false;
+  bool _isFetchingHealthData = false;
+  List<HealthDataPoint> _healthDataPoints = [];
+  DateTime? _lastHealthSync;
+  Timer? _healthCheckTimer;
+  final Duration _healthCheckInterval = Duration(minutes: 5); // Check every 5 minutes
+
+  
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _fetchUserData();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _checkAndShowHealthDialog();
+    _initHealthMonitoring();
+    _initServices();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _healthCheckTimer?.cancel();
+    super.dispose();
+  }
+
+  // new method to initialize our services:
+Future<void> _initServices() async {
+  try {
+    // Initialize notification service
+    await NotificationService.initialize();
+    
+    // Initialize stress management service
+    await StressManagementService.initialize();
+    
+    // Initialize DeepSeek with API key (replace with your actual API key)
+    // In production, you would get this from a secure source
+   await OllamaService.initialize(
+   customApiUrl: 'ht://172.20.10.2:11434/api/generate', // Your Ollama server IP
+   customModelName: 'deepseek-r1', // Or another model you have pulled
+);
+    
+  } catch (e) {
+    print('Failed to initialize services: $e');
+  }
+}
+  // Handle app lifecycle changes to refresh health data when app returns to foreground
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // Refresh health data when app comes to foreground
+      _fetchHealthDataWithLogging();
+    }
+  }
+
+ 
+  Future<void> _initHealthMonitoring() async {
+    final hasPermission = await HealthService.hasPermissions;
+    
+    if (!hasPermission) {
+      // Show dialog only if permissions not granted
+      await _showPermissionDialog();
+    } else {
+      // Start with immediate fetch if permissions are already granted
+      await _fetchHealthDataWithLogging();
+      // Then set up the periodic timer for automatic updates
+      _startHealthCheckTimer();
+    }
+  }
+
+  void _startHealthCheckTimer() {
+    // Cancel existing timer if any
+    _healthCheckTimer?.cancel();
+    
+    // Start new periodic timer
+    _healthCheckTimer = Timer.periodic(_healthCheckInterval, (timer) {
+      if (mounted) {
+        _fetchHealthDataWithLogging();
+      }
     });
   }
 
-  Future<void> _checkAndShowHealthDialog() async {
+  Future<void> _fetchHealthDataWithLogging() async {
+    if (_isFetchingHealthData || !mounted) return;
+    
+    setState(() => _isFetchingHealthData = true);
+
     try {
-      final prefs = await SharedPreferences.getInstance();
-      _healthDialogShown = prefs.getBool('healthDialogShown') ?? false;
+      print('Starting health data fetch automatically...');
+      final healthData = await HealthService.fetchHealthData();
       
-      if (!_healthDialogShown && mounted) {
-        await Future.delayed(const Duration(seconds: 1)); // Small delay for better UX
-        _showPermissionDialog();
+      if (healthData.isEmpty) {
+        print('No health data available');
+        return;
       }
+
+      setState(() {
+        _healthDataPoints = healthData;
+        _lastHealthSync = DateTime.now();
+      });
+
+      _logHealthDataDetails(healthData);
+      await _processHealthDataForStress(healthData);
+      
     } catch (e) {
-      print('Error checking health dialog status: $e');
-    }
-  }
-
-  Future<void> fetchHealthData() async {
-    try {
-      final HealthFactory health = HealthFactory();
-      final types = <HealthDataType>[
-        HealthDataType.HEART_RATE,
-        HealthDataType.HEART_RATE_VARIABILITY_SDNN,
-        HealthDataType.ACTIVE_ENERGY_BURNED,
-        HealthDataType.WORKOUT,
-        HealthDataType.STEPS,
-        HealthDataType.MOVE_MINUTES,
-      ];
-
-      final bool requested = await health.requestAuthorization(types);
-
-      if (requested) {
-        final now = DateTime.now();
-        final yesterday = now.subtract(const Duration(days: 1));
-
-        final List<HealthDataPoint> healthData = await health.getHealthDataFromTypes(
-          yesterday,
-          now,
-          types,
-        );
-
-        print('Fetched ${healthData.length} health data points');
-      } else {
-        print('Health data authorization not granted');
-      }
-    } catch (e) {
-      print('Error fetching health data: $e');
+      print('Error in health data fetch: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to access health data: ${e.toString()}')),
+          const SnackBar(content: Text('Failed to fetch health data')),
         );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isFetchingHealthData = false);
       }
     }
   }
 
-  void _showPermissionDialog() {
-    showDialog(
+  void _logHealthDataDetails(List<HealthDataPoint> healthData) {
+    print('=== HEALTH DATA SUMMARY ===');
+    print('Total data points fetched: ${healthData.length}');
+    
+    // Count data points by type
+    final typeCounts = <HealthDataType, int>{};
+    for (var point in healthData) {
+      typeCounts.update(point.type, (value) => value + 1, ifAbsent: () => 1);
+    }
+    
+    typeCounts.forEach((type, count) {
+      print('$type: $count points');
+    });
+    
+    // Print sample data points with proper value handling
+    if (healthData.isNotEmpty) {
+      print('\n=== SAMPLE DATA POINTS ===');
+      for (var i = 0; i < min(3, healthData.length); i++) {
+        final point = healthData[i];
+        final value = point.value is NumericHealthValue
+            ? (point.value as NumericHealthValue).numericValue
+            : point.value.toString();
+        print('${point.type}: $value at ${point.dateFrom}');
+      }
+    }
+    
+    print('=== END OF SUMMARY ===');
+  }
+
+  Future<void> _processHealthDataForStress(List<HealthDataPoint> healthData) async {
+    try {
+      // Extract heart rate data
+      final heartRates = healthData
+          .where((point) => point.type == HealthDataType.HEART_RATE)
+          .toList();
+
+      // Extract hrv data    
+      final hrvReadings = healthData
+          .where((point) => point.type == HealthDataType.HEART_RATE_VARIABILITY_SDNN)
+          .toList();
+
+      // Extract workout data
+      final workouts = healthData
+          .where((point) => point.type == HealthDataType.WORKOUT)
+          .toList();
+      
+      print('Found ${heartRates.length} heart rate readings and ${workouts.length} workouts');
+      
+      if (heartRates.isEmpty) {
+        print('No heart rate data available for stress detection');
+        return;
+      }
+      
+      // Get the most recent heart rate
+      final latestHeartRate = heartRates.reduce((a, b) => a.dateFrom.isAfter(b.dateFrom) ? a : b);
+      
+      // Get most recent values
+      final latestHR = _extractNumericValue(
+        heartRates.reduce((a, b) => a.dateFrom.isAfter(b.dateFrom) ? a : b).value
+      );
+      
+      double? latestHRV;
+      if (hrvReadings.isNotEmpty) {
+        latestHRV = _extractNumericValue(
+          hrvReadings.reduce((a, b) => a.dateFrom.isAfter(b.dateFrom) ? a : b).value
+        );
+      }
+    
+      // Check if user is currently exercising
+      final isExercising = workouts.any((workout) => 
+          workout.dateFrom.isAfter(DateTime.now().subtract(Duration(minutes: 30))));
+      
+      print('Latest values - HR: $latestHR, HRV: $latestHRV, Exercising: $isExercising');
+      
+      await _sendToStressDetectionAPI(latestHR, latestHRV, isExercising);
+      
+    } catch (e) {
+      print('Error processing health data: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error processing health data: ${e.toString()}')),
+        );
+      }
+    }
+  }
+  
+  double _extractNumericValue(dynamic healthValue) {
+    if (healthValue is NumericHealthValue) {
+      return healthValue.numericValue.toDouble();
+    } else if (healthValue is num) {
+      return healthValue.toDouble();
+    }
+    return double.tryParse(healthValue.toString()) ?? 0.0;
+  }
+
+  Future<void> _sendToStressDetectionAPI(
+    double heartRate, 
+    double? hrv,
+    bool isExercising,
+  ) async {
+    const maxRetries = 3;
+    int attempt = 0;
+    
+    while (attempt < maxRetries) {
+      try {
+        final payload = {
+          'user_id': 1, // Replace with actual user ID
+          'heart_rate': heartRate,
+          'hrv': hrv,
+          'is_exercising': isExercising,
+          'timestamp': DateTime.now().toIso8601String(),
+        };
+        
+        final response = await http.post(
+          Uri.parse('http://172.20.10.2:8000/api/detectstress'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode(payload),
+        ).timeout(const Duration(seconds: 10));
+        
+        if (response.statusCode == 200) {
+          final responseData = jsonDecode(response.body);
+          print('Stress result: ${responseData['is_stressed']}, Score: ${responseData['stress_score']}');
+          
+          if (mounted && responseData['is_stressed'] == true) {
+            _showStressAlert(responseData['stress_score']);
+          }
+          return; // Success - exit retry loop
+        }
+      } catch (e) {
+        print('Attempt ${attempt + 1} failed: $e');
+        if (attempt == maxRetries - 1 && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Failed to send health data')),
+          );
+        }
+      }
+      
+      attempt++;
+      await Future.delayed(Duration(seconds: attempt * 2)); // Exponential backoff
+    }
+  }
+
+  // Replace the _showStressAlert method with this:
+void _showStressAlert(double stressScore) {
+  // Process the stress detection with our new service
+  StressManagementService.processStressData(
+    context: context,
+    isStressed: true,
+    stressScore: stressScore,
+    userName: userName,
+    heartRate: _getLatestHeartRate(),
+    hrv: _getLatestHRV(),
+    isExercising: _isCurrentlyExercising(),
+  );
+
+}
+
+// Add these helper methods to extract the latest health data:
+int? _getLatestHeartRate() {
+  final heartRates = _healthDataPoints
+      .where((point) => point.type == HealthDataType.HEART_RATE)
+      .toList();
+  
+  if (heartRates.isEmpty) return null;
+  
+  final latest = heartRates.reduce((a, b) => 
+      a.dateFrom.isAfter(b.dateFrom) ? a : b);
+  
+  return _extractNumericValue(latest.value).round();
+}
+
+double? _getLatestHRV() {
+  final hrvReadings = _healthDataPoints
+      .where((point) => point.type == HealthDataType.HEART_RATE_VARIABILITY_SDNN)
+      .toList();
+  
+  if (hrvReadings.isEmpty) return null;
+  
+  final latest = hrvReadings.reduce((a, b) => 
+      a.dateFrom.isAfter(b.dateFrom) ? a : b);
+  
+  return _extractNumericValue(latest.value);
+}
+
+bool _isCurrentlyExercising() {
+  return _healthDataPoints
+      .where((point) => point.type == HealthDataType.WORKOUT)
+      .any((workout) => 
+          workout.dateFrom.isAfter(DateTime.now().subtract(Duration(minutes: 30))));
+}
+
+
+  // Updated permission dialog handler
+  Future<void> _showPermissionDialog() async {
+    return showDialog<void>(
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
         return AlertDialog(
-          backgroundColor: const Color(0xB3B3B3D1),
-          insetPadding: const EdgeInsets.symmetric(horizontal: 10),
-          contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-          content: Container(
-            width: 220,
-            decoration: BoxDecoration(
-              color: const Color.fromARGB(179, 252, 252, 255),
-              borderRadius: BorderRadius.circular(8),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  'Rewaq wants to access data from your Health app',
-                  style: TextStyle(
-                    fontFamily: 'SF Pro Display',
-                    fontWeight: FontWeight.w700,
-                    fontSize: 12,
-                    color: Colors.black,
-                    height: 1.3,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 10),
-                const Text(
-                  "We use your smartwatch data to analyze stress, fatigue, and emotional states, helping you stay at your best.",
-                  style: TextStyle(
-                    fontFamily: 'SF Pro Display',
-                    fontWeight: FontWeight.w300,
-                    fontSize: 10,
-                    color: Colors.black,
-                    height: 1.4,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 15),
-                const Divider(color: Colors.grey, thickness: 0.5),
-                TextButton(
-                  onPressed: () async {
-                    Navigator.of(context).pop();
-                    final prefs = await SharedPreferences.getInstance();
-                    await prefs.setBool('healthDialogShown', true);
-                    await fetchHealthData();
-                  },
-                  style: TextButton.styleFrom(
-                    minimumSize: const Size(double.infinity, 40),
-                  ),
-                  child: const Text(
-                    "Allow",
-                    style: TextStyle(
-                      color: Color(0xFF007AFF),
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-                const Divider(color: Colors.grey, thickness: 0.5, height: 0),
-                TextButton(
-                  onPressed: () async {
-                    Navigator.of(context).pop();
-                    final prefs = await SharedPreferences.getInstance();
-                    await prefs.setBool('healthDialogShown', true);
-                  },
-                  style: TextButton.styleFrom(
-                    minimumSize: const Size(double.infinity, 40),
-                  ),
-                  child: const Text(
-                    "Don't Allow",
-                    style: TextStyle(
-                      color: Color(0xFF007AFF),
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
+          title: const Text('Health Data Access'),
+          content: const SingleChildScrollView(
+            child: ListBody(
+              children: <Widget>[
+                Text('This app needs access to your health data to monitor stress levels.'),
+                SizedBox(height: 10),
+                Text('Allow access to heart rate and workout data?'),
               ],
             ),
           ),
+          actions: [
+            TextButton(
+              onPressed: () async {
+                Navigator.of(context).pop();
+                final granted = await HealthService.requestPermissions();
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.setBool('healthDialogShown', true);
+                
+                if (granted) {
+                  await _fetchHealthDataWithLogging();
+                  _startHealthCheckTimer();
+                }
+              },
+              child: const Text("Allow"),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.of(context).pop();
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.setBool('healthDialogShown', true);
+              },
+              child: const Text("Don't Allow"),
+            ),
+          ],
         );
       },
     );
@@ -426,11 +630,67 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
                 ),
               ),
+              // Show health sync status with a more subtle indicator
+              if (_isFetchingHealthData)
+                Padding(
+                  padding: const EdgeInsets.only(top: 20),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: const [
+                      SizedBox(
+                        width: 12,
+                        height: 12,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF7A1DFF)),
+                        ),
+                      ),
+                      SizedBox(width: 8),
+                      Text(
+                        'Syncing health data...',
+                        style: TextStyle(
+                          color: Color(0xFF7A1DFF),
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              else if (_lastHealthSync != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 20),
+                  child: Center(
+                    child: Text(
+                      'Last health sync: ${_formatDateTime(_lastHealthSync!)}',
+                      style: const TextStyle(
+                        color: Colors.grey,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ),
             ],
           ),
         ),
       ),
+      // Remove the floating action button to make sync automatic
     );
+  }
+  
+  // Helper to format the timestamp nicely
+  String _formatDateTime(DateTime dateTime) {
+    final now = DateTime.now();
+    final difference = now.difference(dateTime);
+    
+    if (difference.inMinutes < 1) {
+      return 'Just now';
+    } else if (difference.inMinutes < 60) {
+      return '${difference.inMinutes} minutes ago';
+    } else if (difference.inHours < 24) {
+      return '${difference.inHours} hours ago';
+    } else {
+      return '${dateTime.day}/${dateTime.month}/${dateTime.year} ${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')}';
+    }
   }
 }
 

@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class BackendService {
-  static const String baseUrl = 'http://172.20.10.3:8000'; // Replace with your backend URL
+  static const String baseUrl = 'http://172.20.10.2:8000'; // Replace with your backend URL
   
   static Future<Map<String, dynamic>> fetchUserData(String userId) async {
   try {
@@ -31,6 +31,98 @@ class BackendService {
       'points': 0,
       'image': null, // Add default image path or null
     };
+  }
+}
+
+static Future<List<Map<String, dynamic>>> fetchVouchers() async {
+    try {
+      final response = await http.get(
+        Uri.parse(
+            '$baseUrl/api/vouchers'), // Changed from /api/vouchers?available=true
+        headers: {'Accept': 'application/json'},
+      );
+ 
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(response.body);
+        if (jsonData['success'] == true) {
+          return List<Map<String, dynamic>>.from(jsonData['data']);
+        } else {
+          throw Exception('Failed to fetch vouchers: ${jsonData['message']}');
+        }
+      } else {
+        throw Exception('Failed to load vouchers: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error fetching vouchers: $e');
+      throw Exception('Failed to fetch vouchers: $e');
+    }
+  }
+ 
+  static Future<Map<String, dynamic>> redeemVoucher(int voucherId) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/vouchers/$voucherId/redeem'),
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+      );
+ 
+      if (response.statusCode != 200) {
+        return {
+          'success': false,
+          'message': 'Server returned ${response.statusCode}',
+        };
+      }
+ 
+      final jsonData = json.decode(response.body);
+      print('API Response: $jsonData'); // Debug print
+ 
+      if (jsonData['success'] == true) {
+        return {
+          'success': true,
+          'message': jsonData['message'],
+          'data': {
+            'remaining_points': jsonData['data']['remaining_points'],
+            'voucher': {
+              'code': jsonData['data']['voucher_code'] ??
+                  jsonData['data']['voucher']['code'] ??
+                  'GENERATED_${DateTime.now().millisecondsSinceEpoch}' // Fallback
+            }
+          }
+        };
+      } else {
+        return {
+          'success': false,
+          'message': jsonData['message'] ?? 'Failed to redeem voucher',
+        };
+      }
+    } catch (e) {
+      print('Error redeeming voucher: $e');
+      return {
+        'success': false,
+        'message': 'Network error: $e',
+      };
+    }
+  }
+
+static Future<void> logStressInteraction(Map<String, dynamic> data) async {
+  try {
+    final response = await http.post(
+      Uri.parse('http://172.20.10.2:8000/api/stress-interactions'),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode(data),
+    ).timeout(const Duration(seconds: 10));
+    
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      print('Failed to log stress interaction: ${response.statusCode}');
+      print('Response: ${response.body}');
+    }
+  } catch (e) {
+    print('Error logging stress interaction: $e');
+    // Silently fail - this is analytics logging and shouldn't interrupt the app
   }
 }
 
