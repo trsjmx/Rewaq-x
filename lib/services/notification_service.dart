@@ -39,7 +39,7 @@ class NotificationService {
       },
     );
     
-    // Create notification channel for Android
+  
     await _createNotificationChannel();
     
     // Request permissions for iOS
@@ -100,14 +100,14 @@ class NotificationService {
     );
     
     await _notificationsPlugin.show(
-      Random().nextInt(1000), // Random ID to avoid overwriting
+      Random().nextInt(1000), 
       title,
       message,
       platformDetails,
       payload: payload,
     );
     
-    // Log that we showed a notification
+    // Log showed a notification
     await _logNotification(message);
   }
   
@@ -141,7 +141,7 @@ class NotificationService {
       payload: payload,
     );
     
-    // Log that we scheduled a notification
+    // Log scheduled a notification
     await _logNotification(message);
   }
   
@@ -150,7 +150,7 @@ class NotificationService {
     final prefs = await SharedPreferences.getInstance();
     final recentNotifications = prefs.getStringList('recent_notifications') ?? [];
     
-    // Add this notification to the list
+    // Add notification to the list
     recentNotifications.add('${DateTime.now().toIso8601String()}:$message');
     
     // Keep only the last 10 notifications
@@ -191,6 +191,7 @@ class NotificationService {
     return false;
   }
   
+  
   // Check if two messages are similar enough to be considered duplicates
   static bool _areMessagesSimilar(String a, String b) {
     // Simple heuristic: if the first 10 characters match
@@ -199,4 +200,6 @@ class NotificationService {
     }
     return a == b;
   }
+
+  
 }

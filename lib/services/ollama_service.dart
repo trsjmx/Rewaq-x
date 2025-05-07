@@ -4,9 +4,9 @@ import 'package:html/parser.dart' as html_parser;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class OllamaService {
-  // API configuration - replace with your Ollama server address
+  
   static const String _ollamaApiUrl = 'http://172.20.10.2:11434/api/generate';
-  static const String _ollamaModel = 'deepseek-r1:1.5b';
+  static const String _ollamaModel = 'deepseek-r1';
   
   /// Initialize the Ollama service
   static Future<void> initialize({required String customModelName, required String customApiUrl}) async {

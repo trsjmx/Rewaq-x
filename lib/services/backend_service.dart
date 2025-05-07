@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class BackendService {
-  static const String baseUrl = 'http://172.20.10.2:8000'; // Replace with your backend URL
+  static const String baseUrl = 'http://172.20.10.2:8000'; 
   
   static Future<Map<String, dynamic>> fetchUserData(String userId) async {
   try {
@@ -19,7 +19,7 @@ class BackendService {
         'name': jsonData['name']?.toString() ?? 'User',
         'points': (jsonData['points'] is int) ? jsonData['points'] : 
                  int.tryParse(jsonData['points']?.toString() ?? '0') ?? 0,
-        'image': jsonData['image']?.toString(), // Add this line for home screen image
+        'image': jsonData['image']?.toString(), 
       };
     } else {
       throw Exception('API Error: ${response.statusCode}');
@@ -29,7 +29,7 @@ class BackendService {
     return {
       'name': 'User',
       'points': 0,
-      'image': null, // Add default image path or null
+      'image': null, 
     };
   }
 }
@@ -38,7 +38,7 @@ static Future<List<Map<String, dynamic>>> fetchVouchers() async {
     try {
       final response = await http.get(
         Uri.parse(
-            '$baseUrl/api/vouchers'), // Changed from /api/vouchers?available=true
+            '$baseUrl/api/vouchers'), 
         headers: {'Accept': 'application/json'},
       );
  
@@ -106,6 +106,9 @@ static Future<List<Map<String, dynamic>>> fetchVouchers() async {
     }
   }
 
+
+
+/*
 static Future<void> logStressInteraction(Map<String, dynamic> data) async {
   try {
     final response = await http.post(
@@ -125,6 +128,8 @@ static Future<void> logStressInteraction(Map<String, dynamic> data) async {
     // Silently fail - this is analytics logging and shouldn't interrupt the app
   }
 }
+*/
+
 
 static Future<Map<String, dynamic>> fetchUserProfile(String userId) async {
   try {
@@ -165,7 +170,7 @@ static Future<List<dynamic>> fetchPosts() async {
         print('User image: ${user['image']}');
         print('Profile image: ${profile['image']}');
         
-        // Handle image URL - use whichever exists (user.image or profile.image)
+        
         String? imageUrl;
         if (user['image'] != null) {
           imageUrl = user['image'].toString();

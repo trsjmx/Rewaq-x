@@ -86,8 +86,6 @@ class _MainScreenState extends State<MainScreen> {
             _buildBottomBarIcon(
                 'assets/images/bottom_nav/coloredGift.svg', 'Rewards', 2),
             _buildBottomBarIcon(
-                'assets/images/bottom_nav/calendar (7) 1.svg', 'Events', 3),
-            _buildBottomBarIcon(
                 'assets/images/bottom_nav/uncoloredProfile.svg', 'Profile', 4),
           ],
         ),

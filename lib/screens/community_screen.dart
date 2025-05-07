@@ -61,11 +61,19 @@ class _CommunityScreenState extends State<CommunityScreen> {
           });
         }
       });
+    } else if (e.toString().contains('You cannot react to your own post')) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('You cannot react to your own post'),
+          backgroundColor: Colors.red,
+        ),
+      );
     } else {
       // Show a generic error message if needed
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error: ${e.toString()}'),
+          backgroundColor: Colors.red,
         ),
       );
     }

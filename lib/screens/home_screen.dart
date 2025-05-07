@@ -62,7 +62,7 @@ Future<void> _initServices() async {
     // Initialize DeepSeek with API key (replace with your actual API key)
     // In production, you would get this from a secure source
    await OllamaService.initialize(
-   customApiUrl: 'ht://172.20.10.2:11434/api/generate', // Your Ollama server IP
+   customApiUrl: 'http://172.20.10.2:11434/api/generate', // Your Ollama server IP
    customModelName: 'deepseek-r1', // Or another model you have pulled
 );
     
@@ -237,52 +237,70 @@ Future<void> _initServices() async {
     return double.tryParse(healthValue.toString()) ?? 0.0;
   }
 
-  Future<void> _sendToStressDetectionAPI(
-    double heartRate, 
-    double? hrv,
-    bool isExercising,
-  ) async {
-    const maxRetries = 3;
-    int attempt = 0;
-    
-    while (attempt < maxRetries) {
-      try {
-        final payload = {
-          'user_id': 1, // Replace with actual user ID
-          'heart_rate': heartRate,
-          'hrv': hrv,
-          'is_exercising': isExercising,
-          'timestamp': DateTime.now().toIso8601String(),
-        };
-        
-        final response = await http.post(
-          Uri.parse('http://172.20.10.2:8000/api/detectstress'),
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode(payload),
-        ).timeout(const Duration(seconds: 10));
-        
-        if (response.statusCode == 200) {
-          final responseData = jsonDecode(response.body);
-          print('Stress result: ${responseData['is_stressed']}, Score: ${responseData['stress_score']}');
-          
-          if (mounted && responseData['is_stressed'] == true) {
-            _showStressAlert(responseData['stress_score']);
-          }
-          return; // Success - exit retry loop
-        }
-      } catch (e) {
-        print('Attempt ${attempt + 1} failed: $e');
-        if (attempt == maxRetries - 1 && mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Failed to send health data')),
-          );
-        }
-      }
+ // Add this to your _sendToStressDetectionAPI method (replace the existing one)
+Future<void> _sendToStressDetectionAPI(
+  double heartRate, 
+  double? hrv,
+  bool isExercising,
+) async {
+  const maxRetries = 3;
+  int attempt = 0;
+  
+  print('=== STARTING STRESS DETECTION ===');
+  print('HR: $heartRate, HRV: $hrv, Exercising: $isExercising');
+  
+  while (attempt < maxRetries) {
+    try {
+      final payload = {
+        'user_id': 1,
+        'heart_rate': heartRate,
+        'hrv': hrv,
+        'is_exercising': isExercising,
+        'timestamp': DateTime.now().toIso8601String(),
+      };
       
-      attempt++;
-      await Future.delayed(Duration(seconds: attempt * 2)); // Exponential backoff
+      print('Attempt ${attempt + 1}: Sending to stress API...');
+      
+      final response = await http.post(
+        Uri.parse('http://172.20.10.2:8000/api/detectstress'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',},
+        body: jsonEncode(payload),
+      ).timeout(const Duration(seconds: 10));
+      
+      print('API Response: ${response.statusCode} - ${response.body}');
+      
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        print('Stress result: ${responseData['is_stressed']}, Score: ${responseData['stress_score']}');
+        
+        if (mounted) {
+          if (responseData['is_stressed'] == true) {
+            print('User is stressed! Showing alert...');
+            _showStressAlert(responseData['stress_score']);
+          } else {
+            print('User is not stressed');
+          }
+        }
+        return;
+      } else {
+        print('API Error: ${response.statusCode} - ${response.body}');
+      }
+    } catch (e) {
+      print('Attempt ${attempt + 1} failed: $e');
+      if (attempt == maxRetries - 1 && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to detect stress')),
+        );
+      }
     }
+    
+    attempt++;
+    await Future.delayed(Duration(seconds: attempt * 2));
   }
+  print('=== STRESS DETECTION COMPLETED ===');
+}
 
   // Replace the _showStressAlert method with this:
 void _showStressAlert(double stressScore) {
